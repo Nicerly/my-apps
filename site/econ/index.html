@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<script>
+(function(){
+var APP='econ', LS='key_'+APP, qs=new URLSearchParams(location.search), K=qs.get('k')||'';
+try{ if(K) localStorage.setItem(LS,K); else K=localStorage.getItem(LS)||'' }catch(e){}
+window.__TUNNEL=1; window.__STATIC=1;
+function b64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+var keyP=null; function getKey(){return keyP||(keyP=crypto.subtle.importKey('raw',b64(K),{name:'AES-GCM'},false,['decrypt']))}
+var _fetch=window.fetch.bind(window), mem={}, BASE=new URL('data/',location.href);
+async function get(name){
+  var r=await _fetch(new URL(name+'.enc?t='+Date.now(),BASE).href,{cache:'no-store'});
+  if(!r.ok) throw new Error(r.status===404?'No data yet - try again in a few minutes':'Data HTTP '+r.status);
+  var u=new Uint8Array(await r.arrayBuffer()), pt;
+  try{ pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},await getKey(),u.slice(12)) }
+  catch(e){ throw new Error('Wrong or missing key - open the app from its private link') }
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function load(name,force){
+  var c=mem[name]; if(c&&!force&&Date.now()-c.t<60000) return c.p;
+  var p=get(name); mem[name]={t:Date.now(),p:p};
+  p.catch(function(){ if(mem[name]&&mem[name].p===p) delete mem[name] }); return p;
+}
+function J(o,s){return new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}})}
+function safe(s){return String(s).replace(/[^A-Za-z0-9]/g,function(c){return '_'+('0'+c.charCodeAt(0).toString(16).toUpperCase()).slice(-2)})}
+var ROUTES={
+ news: async function(p,q){ if(p==='/api/news') return load('news',q.has('refresh')); return J({error:'not found'},404) },
+ econ: async function(p,q,m,b){
+  var core=await load('core'), avail=core.avail||[];
+  if(p==='/api/watchlist'){
+    if(m==='POST'){ var l=[]; try{l=JSON.parse(b)}catch(e){} l=(l||[]).filter(function(s){return avail.indexOf(s)>=0}); try{localStorage.setItem('wl_'+APP,JSON.stringify(l))}catch(e){} return l }
+    try{ var s=JSON.parse(localStorage.getItem('wl_'+APP)||'null'); if(Array.isArray(s)&&s.length) return s.filter(function(x){return avail.indexOf(x)>=0}) }catch(e){}
+    return core.watchlist }
+  if(p==='/api/quotes') return (q.get('s')||'').split(',').filter(Boolean).map(function(s){return core.quotes[s]||{symbol:s,error:'Not in this app - ask the agent to add it'}});
+  if(p==='/api/chart'){ var c=await load('c/'+safe(q.get('s')||'')), r=c[q.get('range')||'1D']; if(!r) throw new Error('no chart data'); return r }
+  if(p==='/api/macro') return core.macro;
+  if(p==='/api/macro/series'){ var x=(core.series||{})[q.get('id')]; if(!x) throw new Error('no series data'); return x }
+  if(p==='/api/news') return core.news;
+  if(p==='/api/trending') return core.trending;
+  return J({error:'not found'},404) }
+};
+window.fetch=async function(u,o){
+  var url; try{url=new URL(typeof u==='string'?u:((u&&u.url)||String(u)),location.href)}catch(e){return _fetch(u,o)}
+  var i=url.pathname.indexOf('/api/');
+  if(url.origin!==location.origin||i<0) return _fetch(u,o);
+  if(!K) return J({error:'This app needs its private link.'},403);
+  try{ var v=await ROUTES[APP](url.pathname.slice(i),url.searchParams,((o&&o.method)||'GET').toUpperCase(),o&&o.body); return v instanceof Response?v:J(v) }
+  catch(e){ return J({error:String((e&&e.message)||e)},502) }
+};
+if(APP==='econ'){ var WS=function(){this.readyState=0}; WS.CONNECTING=0;WS.OPEN=1;WS.CLOSING=2;WS.CLOSED=3;
+  WS.prototype.send=WS.prototype.close=WS.prototype.addEventListener=WS.prototype.removeEventListener=function(){}; window.WebSocket=WS }
+if(!K) document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML='<div style="padding:40px;font:16px system-ui;color:#d7dde8;background:#0b0e14;min-height:100vh">This app needs its private link. Open it once from the link the agent gave you.</div>'});
+})();
+</script><link rel="manifest" href="manifest.webmanifest"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terminal</title>
+<script src="lw.js"></script>
+<style>
+:root{--bg:#0b0e14;--panel:#111620;--line:#1f2633;--fg:#d7dde8;--mut:#7d8799;--up:#22c55e;--down:#ef4444;--acc:#f59e0b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+#main{flex:0 0 46%;display:flex;flex-direction:column;min-height:0;border-bottom:1px solid var(--line)}
+#qhead{padding:6px 10px 2px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#qsym{font-size:18px;font-weight:700;color:#fff}
+#qname{color:var(--mut);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
+#qprice{font-size:18px;font-weight:700;margin-left:auto}
+#qchg{font-weight:600}
+#qstats{padding:0 10px;color:var(--mut);font-size:11px;display:flex;gap:10px;flex-wrap:wrap}
+#ranges{display:flex;gap:4px;padding:6px 10px}
+#ranges button{flex:1;background:transparent;border:0;border-radius:6px;padding:6px 0;font-size:12px;font-weight:600;color:var(--mut);cursor:pointer}
+#ranges button.on{color:#fff;background:#1c2533}
+#chartwrap{position:relative;flex:1;min-height:0}
+#chart{position:absolute;inset:0}
+#legend{position:absolute;left:8px;top:6px;z-index:3;font-size:12px;color:var(--mut);pointer-events:none;background:rgba(11,14,20,.85);padding:3px 7px;border-radius:5px;font-variant-numeric:tabular-nums}#legend:empty{display:none}#legend b{color:#d6dbe4;font-weight:600;margin-right:6px}
+#chartmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);z-index:4;pointer-events:none;text-align:center;padding:20px}
+.up{color:var(--up)}.down{color:var(--down)}
+#wl{flex:1;min-height:0;display:flex;flex-direction:column}
+#addf{display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--line)}
+#addf input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:5px 8px;text-transform:uppercase}
+#addf button{background:var(--acc);color:#000;border:0;border-radius:4px;padding:0 12px;font-weight:700}
+#addmsg{color:var(--down);font-size:11px;padding:0 10px}
+#addmsg:empty{display:none}
+#list{list-style:none;margin:0;padding:0;overflow-y:auto;flex:1}
+#list li{display:grid;grid-template-columns:22px 1fr auto 76px 26px;align-items:center;gap:8px;padding:7px 4px 7px 2px;border-bottom:1px solid #151b26;cursor:pointer}
+#list li.sel{background:#16202e;box-shadow:inset 3px 0 var(--acc)}
+.sym{font-weight:700;color:#fff}.nm{color:var(--mut);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.px{text-align:right;transition:background .6s}
+.flash-up{background:rgba(34,197,94,.35)}.flash-down{background:rgba(239,68,68,.35)}
+.pct{text-align:center;border-radius:4px;padding:2px 0;font-weight:600;color:#fff}
+.pct.up{background:#15803d}.pct.down{background:#b91c1c}.pct.flat{background:#374151}
+.hdl{color:var(--mut);font-size:18px;text-align:center;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;padding:6px 0}
+#list li.drag{background:#1c2a3d;box-shadow:0 2px 12px #000;position:relative;z-index:2}
+.rm{background:none;border:0;color:var(--mut);font-size:16px;cursor:pointer;padding:0}
+#list li.grp{display:block;padding:8px 10px 3px;color:var(--acc);font-size:10.5px;letter-spacing:.06em;border-bottom:1px solid var(--line);cursor:default;background:none;box-shadow:none}
+#list li.tr .rk{color:var(--acc);font-weight:700;text-align:center}
+[hidden]{display:none!important}
+#tabs{display:flex;border-bottom:1px solid var(--line)}
+#tabs button{flex:1;background:none;border:0;padding:6px 0;color:var(--mut);cursor:pointer;font-weight:600}
+#tabs button.on{color:var(--acc);box-shadow:inset 0 -2px var(--acc)}
+#wl.mac #addf,#wl.mac #addmsg,#wl.mac #list{display:none}
+#wl:not(.mac) #mlist{display:none}
+#mlist{list-style:none;margin:0;padding:0;overflow-y:auto;flex:1}
+#mlist li.mi{display:grid;grid-template-columns:1fr auto 76px;align-items:center;gap:8px;padding:7px 8px 7px 10px;border-bottom:1px solid #151b26;cursor:pointer}
+#mlist li.sel{background:#16202e;box-shadow:inset 3px 0 var(--acc)}
+#mlist .grp{padding:7px 10px 3px;color:var(--acc);font-size:10.5px;letter-spacing:.06em;border-bottom:1px solid var(--line)}
+#wl.news #addf,#wl.news #addmsg,#wl.news #list{display:none}
+#wl:not(.news) #nlist{display:none}
+#nlist{list-style:none;margin:0;padding:0;overflow-y:auto;flex:1}
+#nlist li.ni a{display:flex;gap:8px;padding:8px 10px;border-bottom:1px solid #151b26;color:inherit;text-decoration:none}
+#nlist li.ni a:active{background:#16202e}
+#nlist .rk{color:var(--acc);font-weight:700;min-width:18px;text-align:right}
+#nlist .nb{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+#nlist .nt{color:#fff;font-family:system-ui,sans-serif;font-size:13.5px;line-height:1.3}
+#nlist .nmeta{color:var(--mut);font-size:10.5px}
+#nlist .nmeta b.multi{color:var(--acc)}
+#nlist .src{display:inline-block;background:#1f2937;border-radius:3px;padding:0 5px;margin:3px 4px 0 0;color:#cbd5e1}
+#nlist .grp{padding:7px 10px 5px;color:var(--acc);font-size:10.5px;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+#pwabar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1405;border-bottom:1px solid var(--acc);color:var(--fg);font:12.5px/1.35 system-ui,sans-serif}#pwabar a{color:var(--acc);font-weight:700}#pwabar span{flex:1}#pwax{background:none;border:0;color:var(--mut);font-size:16px}@media (min-width:900px){#pwabar{position:fixed;top:0;left:0;right:0;z-index:50}}
+#upd{color:var(--mut);font-size:10.5px;padding:3px 10px;border-top:1px solid var(--line)}
+#chat{display:flex;flex-direction:column;border-top:1px solid var(--line);background:var(--panel);min-height:0}
+#bar{display:flex;align-items:center;gap:6px;padding:4px 8px}
+#status{flex:1;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#status.busy::before{content:'';display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--acc);animation:pulse .8s ease-out infinite alternate}
+@keyframes pulse{to{opacity:.25}}
+#toggle{background:none;border:1px solid var(--line);border-radius:4px;padding:2px 8px;color:var(--fg);cursor:pointer}
+#toggle.unread{border-color:var(--acc);color:var(--acc)}
+#log{display:none;overflow-y:auto;padding:6px 10px;font-family:system-ui,sans-serif;font-size:14px}
+#log>div{white-space:pre-wrap;margin:6px 0;word-wrap:break-word}
+.user{text-align:right;color:#fff}.user::before{content:'you: ';color:var(--mut)}
+.sending{opacity:.5}.ask{font-weight:600;color:var(--acc)}
+.step{color:var(--mut);font-size:12px}
+.out{font:12px/1.4 ui-monospace,monospace;color:#aab3c2;max-height:12em;overflow:auto}
+.error{color:var(--down)}
+#form{display:flex;gap:6px;padding:6px 8px;border-top:1px solid var(--line)}
+#text{flex:1;resize:none;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px;font-family:system-ui,sans-serif;font-size:14px}
+#form button{background:#1f2937;border:1px solid var(--line);border-radius:4px;padding:0 10px;cursor:pointer}
+#stop{background:#7f1d1d!important}
+#app.chatopen #wl{display:none}
+#app.chatopen #chat{flex:1}
+#app.chatopen #log{display:block;flex:1}
+#app.chatopen #main{flex-basis:30%}
+@media (min-width:900px){
+ #app{display:grid;grid-template-columns:260px 1fr 360px;grid-template-rows:100%}
+ #wl{order:-1;border-right:1px solid var(--line);display:flex!important}
+ #main{border-bottom:0}
+ #chat{border-top:0;border-left:1px solid var(--line)}
+ #log{display:block;flex:1}
+ #toggle{display:none}
+}
+#newsbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:7px 10px;background:#06141f;border-bottom:1px solid #5aa9ff;color:var(--fg);font:12.5px/1.35 system-ui,sans-serif}#newsbar a{color:#5aa9ff;font-weight:700}#newsbar span{flex:1}#newsx{background:none;border:0;color:var(--mut);font-size:16px}#newsbar[hidden],#pwabar[hidden]{display:none}
+#newsbar,#pwabar{flex-wrap:wrap}.cpb{background:#1f2937;border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:4px 10px;font:600 12.5px system-ui,sans-serif}.lnk{flex:1 1 100%;width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:5px;font:12px ui-monospace,monospace;-webkit-user-select:text;user-select:text}</style><script>window.__TUNNEL=1</script>
+
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Terminal"><meta name="theme-color" content="#0b0e14">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<style>#chat,#pwabar{display:none!important}#app{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}@media (min-width:900px){#app{grid-template-columns:260px 1fr!important}}</style>
+</head><body>
+<div id="app">
+<div id="newsbar" hidden><span>📰 Install <b>News App</b>: <a id="newslink" target="_blank" rel="noopener">open the News App link in Safari</a>, then tap Share → Add to Home Screen → name it "News App".</span><button id="newscp" class="cpb" type="button">Copy link</button><button id="newsx" type="button">✕</button><input id="newsurl" class="lnk" readonly></div>
+<div id="pwabar" hidden><span>📲 Get this as an iPhone app: <a id="pwalink" target="_blank" rel="noopener">open the app link in Safari</a>, then tap Share → Add to Home Screen.</span><button id="pwacp" class="cpb" type="button">Copy link</button><button id="pwax" type="button">✕</button><input id="pwaurl" class="lnk" readonly></div>
+ <section id="main">
+  <div id="qhead"><span id="qsym">—</span><span id="qname"></span><span id="qprice"></span><span id="qchg"></span></div>
+  <div id="qstats"></div>
+  <div id="ranges"></div>
+  <div id="chartwrap"><div id="legend"></div><div id="chartmsg">Loading…</div><div id="chart"></div></div>
+ </section>
+ <section id="wl">
+  <div id="tabs"><button type="button" data-t="wl" class="on">Watchlist</button><button type="button" data-t="mac">Macro</button><button type="button" data-t="news">News</button></div>
+  <form id="addf"><input id="addin" placeholder="Add symbol (e.g. AMD, ^GSPC, EURUSD=X)" autocomplete="off" autocapitalize="characters"><button>+</button></form>
+  <div id="addmsg"></div>
+  <ul id="list"></ul>
+  <ul id="mlist"></ul>
+  <ul id="nlist"></ul>
+  <div id="upd">Connecting to market data…</div>
+ </section>
+ <section id="chat">
+  <div id="bar"><div id="status" role="status">Connecting...</div><button id="toggle" type="button">Chat</button></div>
+  <div id="log"></div>
+  <form id="form"><textarea id="text" rows="1" placeholder="Message Fibona"></textarea><button>Send</button><button id="stop" type="button" hidden>Stop</button></form>
+ </section>
+</div>
+<script>
+// ---------- market ----------
+const $ = id => document.getElementById(id)
+let wl = [], quotes = {}, sel = null, range = '1D', lastBars = [], chartToken = 0
+const RANGES = ['1D','5D','1M','6M','1Y','5Y']
+const fmt = p => p == null ? '—' : p.toLocaleString('en-US', {minimumFractionDigits: p < 1 ? 4 : 2, maximumFractionDigits: p < 1 ? 4 : 2})
+const fvol = v => !v ? '—' : v >= 1e9 ? (v/1e9).toFixed(2)+'B' : v >= 1e6 ? (v/1e6).toFixed(2)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : String(v)
+const cls = c => c == null || c === 0 ? 'flat' : c > 0 ? 'up' : 'down'
+async function j(u, o) { const r = await fetch(u, o); const d = await r.json(); if (!r.ok || d.error) throw new Error(d.error || r.status); return d }
+
+const chart = LightweightCharts.createChart($('chart'), {autoSize: true,
+  layout: {background: {color: '#0b0e14'}, textColor: '#8b95a7', fontSize: 12},
+  grid: {vertLines: {visible: false}, horzLines: {color: '#121822'}},
+  timeScale: {timeVisible: true, secondsVisible: false, borderVisible: false, rightOffset: 4, barSpacing: 8, minBarSpacing: 2},
+  rightPriceScale: {borderVisible: false, entireTextOnly: true},
+  crosshair: {mode: 0, vertLine: {color: '#3a4558', style: 2, labelBackgroundColor: '#1f2633'}, horzLine: {color: '#3a4558', style: 2, labelBackgroundColor: '#1f2633'}}})
+const candles = chart.addCandlestickSeries({upColor: '#22c55e', downColor: '#ef4444', borderVisible: true, borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: 'rgba(34,197,94,.8)', wickDownColor: 'rgba(239,68,68,.8)', priceLineStyle: 2})
+candles.priceScale().applyOptions({scaleMargins: {top: 0.14, bottom: 0.24}})
+const vol = chart.addHistogramSeries({priceScaleId: '', priceFormat: {type: 'volume'}, lastValueVisible: false, priceLineVisible: false})
+vol.priceScale().applyOptions({scaleMargins: {top: 0.84, bottom: 0}})
+const volBar = b => ({time: b.time, value: b.volume, color: b.close >= b.open ? 'rgba(34,197,94,.22)' : 'rgba(239,68,68,.22)'})
+function legend(b) { $('legend').innerHTML = b ? `O <b>${fmt(b.open)}</b>H <b>${fmt(b.high)}</b>L <b>${fmt(b.low)}</b>C <b class="${cls(b.close-b.open)}" style="margin:0">${fmt(b.close)}</b>` : '' }
+chart.subscribeCrosshairMove(p => { const b = p && p.seriesData && p.seriesData.get(candles); legend(b || lastBars[lastBars.length-1]) })
+
+$('ranges').innerHTML = RANGES.map(r => `<button data-r="${r}">${r}</button>`).join('')
+$('ranges').onclick = e => { const r = e.target.dataset.r; if (r) { range = r; loadChart(true) } }
+
+async function loadChart(fresh) {
+  if (mode === 'macro') { if (!fresh) return; showStock() }
+  if (!sel) return
+  document.querySelectorAll('#ranges button').forEach(b => b.classList.toggle('on', b.dataset.r === range))
+  const token = ++chartToken, sym = sel
+  if (fresh) { $('chartmsg').textContent = `Loading ${sym}…`; $('chartmsg').hidden = false }
+  try {
+    const d = await j(`/api/chart?s=${encodeURIComponent(sym)}&range=${range}`)
+    if (token !== chartToken) return
+    const bars = d.candles
+    if (!bars.length) { $('chartmsg').textContent = 'No data for this range'; $('chartmsg').hidden = false; candles.setData([]); vol.setData([]); lastBars = []; return }
+    $('chartmsg').hidden = true
+    if (fresh || !lastBars.length) {
+      candles.setData(bars); vol.setData(bars.map(volBar)); chart.timeScale().fitContent()
+    } else {
+      const lt = lastBars[lastBars.length-1].time
+      for (const b of bars) if (b.time >= lt) { candles.update(b); vol.update(volBar(b)) }
+    }
+    lastBars = bars; legend(bars[bars.length-1])
+  } catch (e) {
+    if (token !== chartToken) return
+    if (fresh) { $('chartmsg').textContent = `Chart unavailable: ${e.message}`; $('chartmsg').hidden = false }
+  }
+}
+
+function renderHead() {
+  if (mode === 'macro') return renderMHead()
+  const q = quotes[sel] || {}
+  $('qsym').textContent = sel || '—'; $('qname').textContent = q.name && q.name !== sel ? q.name : ''
+  $('qprice').textContent = q.price != null ? fmt(q.price) : ''
+  $('qchg').className = cls(q.change)
+  $('qchg').textContent = q.change != null ? `${q.change >= 0 ? '+' : ''}${fmt(q.change)} (${q.pct >= 0 ? '+' : ''}${q.pct.toFixed(2)}%)` : ''
+  $('qstats').textContent = q.price != null ? `H ${fmt(q.high)}  L ${fmt(q.low)}  Vol ${fvol(q.volume)}  Prev ${fmt(q.prev)}  ${q.exchange || ''} ${q.currency || ''}` : (q.error ? 'Quote unavailable' : '')
+  document.title = q.price != null ? `${sel} ${fmt(q.price)}` : 'Terminal'
+}
+
+let drag = null
+const prevPx = {}
+
+let trend = [], trendSrc = '', trendDate = ''
+function trendHTML() {
+  if (!trend.length) return ''
+  return `<li class="grp">TRENDING TODAY${trendSrc ? ' · ' + trendSrc : ''}</li>` + trend.map((s, i) => {
+    const q = quotes[s] || {}
+    const pct = q.pct != null ? `${q.pct >= 0 ? '+' : ''}${q.pct.toFixed(2)}%` : (q.error ? 'n/a' : '…')
+    const have = wl.includes(s)
+    return `<li data-s="${s}" class="tr ${s === sel && mode !== 'macro' ? 'sel' : ''}"><div class="rk">${i + 1}</div><div><div class="sym">${s}</div><div class="nm">${(q.name || '').replace(/</g,'&lt;')}</div></div>
+      <div class="px">${fmt(q.price)}</div><div class="pct ${cls(q.change)}">${pct}</div>
+      ${have ? '<span class="rm" title="In your watchlist">✓</span>' : `<button class="rm" data-add="${s}" aria-label="Add ${s}" title="Add to my watchlist">+</button>`}</li>`
+  }).join('') + '<li class="grp">MY WATCHLIST</li>'
+}
+async function loadTrend() {
+  try { const t = await j('/api/trending'); trend = (t.symbols || []).slice(0, 7); trendSrc = t.source || ''; trendDate = t.date || '' } catch (e) { }
+  renderWL(); setTimeout(refreshQuotes, 300)
+}
+function renderWL() {
+  if (drag) return
+  const ul = $('list')
+  ul.innerHTML = trendHTML() + wl.map(s => {
+    const q = quotes[s] || {}
+    const pct = q.pct != null ? `${q.pct >= 0 ? '+' : ''}${q.pct.toFixed(2)}%` : (q.error ? 'n/a' : '…')
+    return `<li data-s="${s}" class="${s === sel && mode !== 'macro' ? 'sel' : ''}"><div class="hdl" data-h="1" title="Drag to reorder">≡</div><div><div class="sym">${s}</div><div class="nm">${(q.name || '').replace(/</g,'&lt;')}</div></div>
+      <div class="px" id="px-${CSS.escape(s)}">${fmt(q.price)}</div><div class="pct ${cls(q.change)}">${pct}</div>
+      <button class="rm" data-rm="${s}" aria-label="Remove ${s}" title="Remove">×</button></li>`
+  }).join('')
+  for (const s of wl) {
+    const q = quotes[s]; if (!q || q.price == null) continue
+    if (prevPx[s] != null && prevPx[s] !== q.price) {
+      const el = document.getElementById('px-' + s); if (el) { el.classList.add(q.price > prevPx[s] ? 'flash-up' : 'flash-down'); setTimeout(() => el.classList.remove('flash-up','flash-down'), 700) }
+    }
+    prevPx[s] = q.price
+  }
+}
+$('list').onclick = async e => {
+  if (e.target.dataset.h) return
+  const ad = e.target.dataset.add
+  if (ad) { e.stopPropagation(); if (!wl.includes(ad)) wl = await j('/api/watchlist', {method: 'POST', body: JSON.stringify([...wl, ad])}); renderWL(); return }
+  const rm = e.target.dataset.rm
+  if (rm) { e.stopPropagation(); wl = await j('/api/watchlist', {method: 'POST', body: JSON.stringify(wl.filter(s => s !== rm))}); if (sel === rm) { sel = wl[0] || null; loadChart(true) } renderWL(); renderHead(); return }
+  const li = e.target.closest('li'); if (li && li.dataset.s) { sel = li.dataset.s; renderWL(); renderHead(); loadChart(true) }
+}
+$('list').addEventListener('pointerdown', e => {
+  if (!e.target.dataset.h) return
+  e.preventDefault()
+  const li = e.target.closest('li'); drag = {li, ul: $('list')}
+  li.classList.add('drag'); try { e.target.setPointerCapture(e.pointerId) } catch (_) {}
+})
+$('list').addEventListener('pointermove', e => {
+  if (!drag) return
+  const ul = drag.ul, r = ul.getBoundingClientRect()
+  if (e.clientY < r.top + 30) ul.scrollTop -= 8; else if (e.clientY > r.bottom - 30) ul.scrollTop += 8
+  for (const o of ul.children) {
+    if (o === drag.li || !o.dataset.s || o.classList.contains('tr')) continue
+    const b = o.getBoundingClientRect()
+    if (e.clientY < b.top || e.clientY > b.bottom) continue
+    const isBefore = drag.li.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_PRECEDING
+    if (isBefore && e.clientY < b.top + b.height / 2) ul.insertBefore(drag.li, o)
+    else if (!isBefore && e.clientY > b.top + b.height / 2) ul.insertBefore(drag.li, o.nextSibling)
+    break
+  }
+})
+async function endDrag() {
+  if (!drag) return
+  drag.li.classList.remove('drag')
+  const order = [...drag.ul.children].filter(li => li.dataset.s && !li.classList.contains('tr')).map(li => li.dataset.s); drag = null
+  const changed = order.join() !== wl.join(); wl = order
+  if (changed) { try { wl = await j('/api/watchlist', {method: 'POST', body: JSON.stringify(order)}) } catch (err) { $('upd').textContent = 'Could not save order: ' + err.message } }
+  renderWL()
+}
+$('list').addEventListener('pointerup', endDrag); $('list').addEventListener('pointercancel', endDrag)
+$('addf').onsubmit = async e => {
+  e.preventDefault()
+  const s = $('addin').value.trim().toUpperCase(); if (!s) return
+  $('addmsg').textContent = ''
+  if (wl.includes(s)) { sel = s; renderWL(); renderHead(); loadChart(true); $('addin').value = ''; return }
+  try {
+    const [q] = await j('/api/quotes?s=' + encodeURIComponent(s))
+    if (!q || q.error || q.price == null) throw new Error('not found')
+    quotes[s] = q
+    wl = await j('/api/watchlist', {method: 'POST', body: JSON.stringify([...wl, s])})
+    sel = s; $('addin').value = ''; renderWL(); renderHead(); loadChart(true)
+  } catch (err) { $('addmsg').textContent = `Couldn't find "${s}"` }
+}
+
+// ---------- macro ----------
+let mode = 'wl', macro = [], macroAt = 0, msel = null, mpts = [], mToken = 0
+const line = chart.addLineSeries({color: '#f59e0b', lineWidth: 2})
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])
+const tstr = t => typeof t === 'string' ? t : (t && typeof t === 'object') ? `${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')}` : new Date(t*1000).toISOString().slice(0,10)
+function fmtM(m, v, chg) {
+  if (v == null) return '—'
+  const s = Math.abs(v).toLocaleString('en-US', {minimumFractionDigits: m.dec, maximumFractionDigits: m.dec})
+  return (v < 0 ? '-' : chg ? '+' : '') + (m.unit === '$' ? '$' : '') + s + (m.unit === '%' && !chg ? '%' : m.unit === 'k' ? 'k' : '')
+}
+function mlegend(p) { const m = macro.find(x => x.id === msel); $('legend').innerHTML = p && m ? `${tstr(p.time)} <b>${fmtM(m, p.value)}</b>` : '' }
+chart.subscribeCrosshairMove(p => { if (mode !== 'macro') return; const v = p && p.seriesData && p.seriesData.get(line); mlegend(v || mpts[mpts.length-1]) })
+function renderMHead() {
+  const m = macro.find(x => x.id === msel) || {}
+  $('qsym').textContent = m.id || '—'; $('qname').textContent = m.name || ''
+  $('qprice').textContent = m.value != null ? fmtM(m, m.value) : ''
+  $('qchg').className = cls(m.change); $('qchg').textContent = m.change != null ? fmtM(m, m.change, true) : ''
+  $('qstats').textContent = m.id ? `${m.source} · as of ${m.date} · prev ${fmtM(m, m.prev)}` : ''
+  document.title = m.id ? `${m.name} ${fmtM(m, m.value)}` : 'Terminal'
+}
+function renderMacro() {
+  const ul = $('mlist')
+  if (!macro.length) { ul.innerHTML = '<li class="grp">Loading macro data…</li>'; return }
+  let g = '', h = ''
+  for (const m of macro) {
+    if (m.group !== g) { g = m.group; h += `<li class="grp">${esc(g).toUpperCase()}</li>` }
+    if (m.error || m.value == null) { h += `<li class="mi"><div><div class="sym">${esc(m.name)}</div><div class="nm">unavailable right now</div></div><div></div><div></div></li>`; continue }
+    h += `<li class="mi ${mode === 'macro' && m.id === msel ? 'sel' : ''}" data-m="${esc(m.id)}"><div><div class="sym">${esc(m.name)}</div><div class="nm">${esc(m.source)} · ${esc(m.date)}</div></div><div class="px">${fmtM(m, m.value)}</div><div class="pct ${cls(m.change)}">${fmtM(m, m.change, true)}</div></li>`
+  }
+  h += `<li class="grp">Updated ${new Date(macroAt).toLocaleTimeString()} · tap a row for its history</li>`
+  ul.innerHTML = h
+}
+async function loadMacro(force) {
+  if (!force && macro.length && Date.now() - macroAt < 300000) return renderMacro()
+  try { macro = await j('/api/macro'); macroAt = Date.now() }
+  catch (e) { if (!macro.length) { $('mlist').innerHTML = `<li class="grp">Macro data unavailable: ${esc(e.message)}</li>`; return } }
+  renderMacro(); if (mode === 'macro') renderHead()
+}
+function showStock() { if (mode !== 'macro') return; mode = 'wl'; line.setData([]); mpts = []; $('ranges').hidden = false; renderMacro(); renderHead() }
+async function showMacro(id) {
+  mode = 'macro'; msel = id; const tok = ++mToken; ++chartToken
+  candles.setData([]); vol.setData([]); lastBars = []; line.setData([]); mpts = []; $('ranges').hidden = true
+  renderMacro(); renderWL(); renderHead(); legend()
+  $('chartmsg').textContent = 'Loading…'; $('chartmsg').hidden = false
+  try {
+    const d = await j('/api/macro/series?id=' + encodeURIComponent(id))
+    if (tok !== mToken || mode !== 'macro') return
+    const pts = (d.points || []).filter(p => p.value != null).sort((a, b) => a.time < b.time ? -1 : a.time > b.time ? 1 : 0).filter((p, i, a) => !i || a[i-1].time !== p.time)
+    const m = macro.find(x => x.id === id) || d, dec = m.dec ?? 2
+    line.applyOptions({priceFormat: {type: 'price', precision: dec, minMove: Math.pow(10, -dec)}})
+    line.setData(pts); mpts = pts; chart.timeScale().fitContent()
+    if (pts.length) $('chartmsg').hidden = true; else $('chartmsg').textContent = 'No history available'
+    mlegend(pts[pts.length-1])
+  } catch (e) { if (tok === mToken) { $('chartmsg').textContent = 'Chart unavailable: ' + e.message; $('chartmsg').hidden = false } }
+}
+$('mlist').onclick = e => { const li = e.target.closest('li[data-m]'); if (li) showMacro(li.dataset.m) }
+$('tabs').onclick = e => {
+  const t = e.target.dataset.t; if (!t) return
+  $('wl').classList.toggle('mac', t === 'mac'); $('wl').classList.toggle('news', t === 'news')
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t))
+  if (t === 'mac') loadMacro()
+  if (t === 'news') loadNews()
+}
+setInterval(() => { if (!document.hidden && $('wl').classList.contains('mac')) loadMacro() }, 60000)
+
+// ---------- news ----------
+let news = null, newsAt = 0
+const ago = t => { const m = Math.max(0, Math.round((Date.now()/1000 - t)/60)); return m < 1 ? 'just now' : m < 60 ? m + 'm ago' : Math.floor(m/60) + 'h ago' }
+function renderNews() {
+  const ul = $('nlist')
+  if (!news) { ul.innerHTML = '<li class="grp">Loading headlines from many outlets…</li>'; return }
+  const it = news.items || []
+  if (!it.length) { ul.innerHTML = '<li class="grp">No headlines right now</li>'; return }
+  ul.innerHTML = it.map((n, i) => {
+    const src = n.sources.slice(0, 4).map(s => `<span class="src">${esc(s)}</span>`).join('') + (n.sources.length > 4 ? `<span class="src">+${n.sources.length - 4}</span>` : '')
+    const href = /^https?:\/\//.test(n.link || '') ? esc(n.link) : '#'
+    return `<li class="ni"><a href="${href}" target="_blank" rel="noopener noreferrer"><span class="rk">${i + 1}</span><span class="nb"><span class="nt">${esc(n.title)}</span><span class="nmeta"><b class="${n.n > 1 ? 'multi' : ''}">${n.n} source${n.n > 1 ? 's' : ''}</b> · ${ago(n.time)}<br>${src}</span></span></a></li>`
+  }).join('') + `<li class="grp">Ranked by how many outlets cover each story · ${news.sources_total} outlets, ${news.headlines_scanned} headlines · updated ${new Date(newsAt).toLocaleTimeString()}</li>`
+}
+async function loadNews(force) {
+  if (!force && news && Date.now() - newsAt < 240000) return renderNews()
+  if (!news) renderNews()
+  try { news = await j('/api/news'); newsAt = Date.now() }
+  catch (e) { if (!news) { $('nlist').innerHTML = `<li class="grp">Headlines unavailable: ${esc(e.message)}</li>`; return } }
+  renderNews()
+}
+setInterval(() => { if (!document.hidden && $('wl').classList.contains('news')) loadNews() }, 60000)
+
+let quoteBusy = false
+async function refreshQuotes() {
+  const syms = [...new Set([...wl, ...trend])]
+  if (!syms.length || quoteBusy) return
+  quoteBusy = true
+  try {
+    const list = await j('/api/quotes?s=' + encodeURIComponent(syms.join(',')))
+    for (const q of list) quotes[q.symbol] = q
+    renderWL(); renderHead()
+    const bad = list.filter(q => q.error).length
+    $('upd').textContent = `Live · updated ${new Date().toLocaleTimeString()}` + (bad ? ` · ${bad} unavailable` : '') + ' · refresh 5s'
+  } catch (e) { $('upd').textContent = `Market data error: ${e.message} — retrying` }
+  quoteBusy = false
+}
+async function start() {
+  try { wl = await j('/api/watchlist') } catch (e) { wl = ['AAPL','MSFT','NVDA','SPY'] }
+  sel = wl[0] || null
+  renderWL(); renderHead(); loadChart(true); refreshQuotes(); loadTrend()
+  setInterval(loadTrend, 30 * 60 * 1000)
+  setInterval(() => { if (!document.hidden) refreshQuotes() }, 5000)
+  setInterval(() => { if (!document.hidden) loadChart(false) }, 10000)
+}
+start()
+
+// ---------- chat with the agent ----------
+const log = $('log'), statusLine = $('status'), form = $('form'), text = $('text'), stop = $('stop'), app = $('app'), toggle = $('toggle')
+let shown = 0, socket, current = ['Ready', false], sending, since = Date.now()
+const streams = new Map()
+function openChat(open) { app.classList.toggle('chatopen', open); toggle.textContent = open ? 'Close' : 'Chat'; if (open) { toggle.classList.remove('unread'); log.scrollTop = log.scrollHeight } }
+toggle.onclick = () => openChat(!app.classList.contains('chatopen'))
+statusLine.onclick = () => { if (getComputedStyle(toggle).display !== 'none') openChat(!app.classList.contains('chatopen')) }
+function unread() { if (!app.classList.contains('chatopen')) toggle.classList.add('unread') }
+function setStatus(label, busy) {
+  if (label !== current[0]) since = Date.now()
+  current = [label, busy]; statusLine.textContent = label; statusLine.classList.toggle('busy', busy); stop.hidden = !busy
+}
+setInterval(() => {
+  const s = Math.round((Date.now() - since) / 1000)
+  if (socket?.readyState === WebSocket.OPEN && current[1] && s >= 10) statusLine.textContent = `${current[0].replace(/\.\.\.$/, '')}, ${s}s`
+}, 1000)
+function add(kind, body) {
+  const last = log.lastElementChild; let div
+  if (kind === 'out' && last && last.className === 'out') { div = last; div.textContent += body }
+  else { div = document.createElement('div'); div.className = kind; div.textContent = body; log.append(div) }
+  return div
+}
+function fromUser(m) {
+  if (sending && sending.textContent === m.trim()) { sending.classList.remove('sending'); sending = undefined } else add('user', m)
+  setStatus('Working...', true)
+}
+function show(ev, stream) {
+  switch (ev.type) {
+    case 'TaskStarted': return fromUser(ev.task)
+    case 'InputReceived': return fromUser(ev.text)
+    case 'InputRequested': add('ask', ev.prompt); unread(); return setStatus('Waiting for you', false)
+    case 'ModelStarted': return setStatus('Thinking...', true)
+    case 'ModelDelta':
+      if (ev.kind !== 'text') return
+      if (stream && stream.div) stream.div.textContent = ev.text; else add('say', ev.text)
+      return unread()
+    case 'CellStarted': add('step', `Step ${ev.number}: ${ev.summary}`); return setStatus(`Running step ${ev.number}: ${ev.summary}`, true)
+    case 'CellOutput': return add('out', ev.text)
+    case 'CellFinished': return ev.error && add('error', ev.error)
+    case 'TaskFinished':
+      if (ev.error) add('error', ev.error)
+      if (ev.status === 'done') return setStatus('Done', false)
+      if (ev.status === 'interrupted') return setStatus('Stopped', false)
+      return setStatus('Something went wrong', false)
+  }
+}
+function showLive(lines) {
+  for (const line of lines) {
+    const p = JSON.parse(line); if (p.seq <= shown) continue
+    let st = streams.get(p.seq)
+    if (!st) { st = {parts: [], div: p.kind === 'text' ? add('say', '') : undefined}; streams.set(p.seq, st) }
+    if (p.part < st.parts.length) continue
+    st.parts.push(p.text)
+    if (st.div) st.div.textContent = st.parts.join('')
+    if (p.kind === 'reasoning') setStatus('Thinking...', true)
+    if (p.kind === 'tool_call') setStatus('Writing the next step...', true)
+  }
+}
+function connect() {
+  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+  socket = new WebSocket(`${scheme}://${location.host}/_fibona/api/pty?cols=100&rows=30&after=${shown}`)
+  socket.onopen = () => setStatus(...current)
+  socket.onmessage = ({data}) => {
+    if (typeof data !== 'string') return
+    const msg = JSON.parse(data)
+    const stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40
+    if (msg.t === 'events') {
+      msg.lines.forEach((line, i) => { const seq = msg.from + i; if (seq <= shown) return; shown = seq; show(JSON.parse(line), streams.get(seq)); streams.delete(seq) })
+    } else if (msg.t === 'live') showLive(msg.lines)
+    else if (msg.t === 'reset') { log.replaceChildren(); streams.clear(); shown = 0; socket.close() }
+    if (stick) log.scrollTop = log.scrollHeight
+  }
+  socket.onclose = e => {
+    if (e.code === 4401) return location.reload()
+    statusLine.textContent = 'Reconnecting...'; statusLine.classList.remove('busy'); stop.hidden = true
+    setTimeout(connect, 1000)
+  }
+}
+form.onsubmit = e => {
+  e.preventDefault()
+  const m = text.value.trim(); if (!m || socket.readyState !== WebSocket.OPEN) return
+  socket.send(new TextEncoder().encode((m.includes('\n') ? `\x1b[200~${m}\x1b[201~` : m) + '\r'))
+  sending = add('user sending', m); log.scrollTop = log.scrollHeight; text.value = ''
+  setStatus('Sending...', true)
+}
+stop.onclick = () => { socket.send(new Uint8Array([3])); setStatus('Stopping...', true) }
+text.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit() } }
+text.onfocus = () => { if (getComputedStyle(toggle).display !== 'none') openChat(true) }
+connect()
+
+function __copy(url, btn, inp){
+  const done = ok => { btn.textContent = ok ? 'Copied ✓ — paste in Safari' : 'Select the link below'; setTimeout(()=>btn.textContent='Copy link', 4000) }
+  const fallback = () => { try { inp.focus(); inp.setSelectionRange(0, url.length); done(document.execCommand('copy')) } catch(e) { done(false) } }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(()=>done(true), fallback); else fallback()
+}
+function __wire(pre, url){
+  const inp = document.getElementById(pre+'url'), btn = document.getElementById(pre+'cp')
+  inp.value = url; inp.onclick = () => inp.setSelectionRange(0, url.length)
+  btn.onclick = () => __copy(url, btn, inp)
+}
+// ---------- install-as-app banner (local page only) ----------
+;(async () => {
+  if (window.__TUNNEL || navigator.standalone) return
+  try {
+    const r = await fetch('/api/pwa', {cache: 'no-store'}); if (!r.ok) return
+    const d = await r.json(); if (!d || !d.url || false) return
+    document.getElementById('pwalink').href = d.url; __wire('pwa', d.url); document.getElementById('pwabar').hidden = false
+    document.getElementById('pwax').onclick = () => { document.getElementById('pwabar').hidden = true; localStorage.setItem('pwaDismissed', d.url) }
+  } catch (e) {}
+})()
+;(async () => {
+  if (window.__TUNNEL || navigator.standalone) return
+  try {
+    const r = await fetch('/api/newsapp', {cache: 'no-store'}); if (!r.ok) return
+    const d = await r.json(); if (!d || !d.url || false) return
+    document.getElementById('newslink').href = d.url; __wire('news', d.url); document.getElementById('newsbar').hidden = false
+    document.getElementById('newsx').onclick = () => { document.getElementById('newsbar').hidden = true; localStorage.setItem('newsDismissed', d.url) }
+  } catch (e) {}
+})()
+</script></body></html>

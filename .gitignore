@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 src/*/news_cache.json
 src/*/*_cache.json
+src/econ/*cache*
+src/econ/bls*
+src/econ/bls_cache.json
+src/econ/trending_cache.json

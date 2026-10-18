@@ -28,7 +28,7 @@ def build_news():
 def build_econ():
     sys.path.insert(0, os.path.join(ROOT, "src", "econ")); import build_econ
     return build_econ.run(put, key("ECON_KEY"), keep_old)
-APPS = {"news": (build_news, ["news"]), "econ": (build_econ, [])}
+APPS = {"news": (build_news, ["news"]), "econ": (build_econ, ["core"])}
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:  # each app in its own process (both have a module called news.py)
