@@ -1,0 +1,5 @@
+site/*/data/
+__pycache__/
+*.pyc
+src/*/news_cache.json
+src/*/*_cache.json

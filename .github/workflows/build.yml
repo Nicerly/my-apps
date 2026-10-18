@@ -1,0 +1,45 @@
+name: build
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install cryptography
+      - name: Build encrypted data
+        run: python build.py
+        env:
+          NEWS_KEY: ${{ secrets.NEWS_KEY }}
+          ECON_KEY: ${{ secrets.ECON_KEY }}
+          PAGES_URL: https://nicerly.github.io/my-apps
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
+      - name: Keep the schedule alive (GitHub pauses idle schedules after 60 days)
+        if: always()
+        continue-on-error: true
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/build.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}

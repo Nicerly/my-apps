@@ -1,0 +1,328 @@
+{
+ "sources": [
+  {
+   "name": "Reuters",
+   "pub": "Reuters",
+   "url": "https://news.google.com/rss/search?q=site:reuters.com+when:1d&hl=en-US&gl=US&ceid=US:en",
+   "gfilter": "Reuters",
+   "prio": 1,
+   "max": 60
+  },
+  {
+   "name": "WSJ",
+   "pub": "Wall Street Journal",
+   "url": "https://news.google.com/rss/search?q=site%3Awsj.com%20when%3A1d&hl=en-US&gl=US&ceid=US:en",
+   "gfilter": "wall street journal|\\bWSJ\\b",
+   "prio": 2,
+   "max": 50
+  },
+  {
+   "name": "BBC World",
+   "pub": "BBC",
+   "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+   "prio": 2
+  },
+  {
+   "name": "BBC Business",
+   "pub": "BBC",
+   "url": "https://feeds.bbci.co.uk/news/business/rss.xml",
+   "hint": "Economy",
+   "prio": 2
+  },
+  {
+   "name": "BBC Science",
+   "pub": "BBC",
+   "url": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+   "hint": "Science",
+   "prio": 2
+  },
+  {
+   "name": "BBC Tech",
+   "pub": "BBC",
+   "url": "https://feeds.bbci.co.uk/news/technology/rss.xml",
+   "hint": "Technology",
+   "prio": 2
+  },
+  {
+   "name": "The Hill",
+   "pub": "The Hill",
+   "url": "https://thehill.com/news/feed/",
+   "prio": 3
+  },
+  {
+   "name": "FT",
+   "pub": "Financial Times",
+   "url": "https://www.ft.com/rss/home",
+   "prio": 3
+  },
+  {
+   "name": "DW",
+   "pub": "DW",
+   "url": "https://rss.dw.com/rdf/rss-en-all",
+   "prio": 4
+  },
+  {
+   "name": "France24",
+   "pub": "France 24",
+   "url": "https://www.france24.com/en/rss",
+   "prio": 4
+  },
+  {
+   "name": "Nature",
+   "pub": "Nature",
+   "url": "https://www.nature.com/nature.rss",
+   "hint": "Science",
+   "prio": 5,
+   "max_age_h": 72,
+   "cap": 2
+  },
+  {
+   "name": "Science (AAAS)",
+   "pub": "Science (AAAS)",
+   "url": "https://www.science.org/rss/news_current.xml",
+   "hint": "Science",
+   "prio": 5,
+   "max_age_h": 72,
+   "cap": 2
+  },
+  {
+   "name": "ScienceDaily",
+   "pub": "ScienceDaily",
+   "url": "https://www.sciencedaily.com/rss/top/science.xml",
+   "hint": "Science",
+   "prio": 5,
+   "cap": 1
+  },
+  {
+   "name": "Phys.org",
+   "pub": "Phys.org",
+   "url": "https://phys.org/rss-feed/",
+   "hint": "Science",
+   "prio": 5,
+   "cap": 1
+  },
+  {
+   "name": "IEEE Spectrum",
+   "pub": "IEEE Spectrum",
+   "url": "https://spectrum.ieee.org/feeds/feed.rss",
+   "hint": "Technology",
+   "prio": 5,
+   "cap": 2
+  },
+  {
+   "name": "Ars Technica",
+   "pub": "Ars Technica",
+   "url": "https://feeds.arstechnica.com/arstechnica/index",
+   "hint": "Technology",
+   "prio": 5,
+   "cap": 2
+  },
+  {
+   "name": "GDACS",
+   "pub": "GDACS (UN/EU disaster alerts)",
+   "url": "https://www.gdacs.org/xml/rss.xml",
+   "hint": "Disasters",
+   "kind": "gdacs",
+   "prio": 6
+  },
+  {
+   "name": "USGS",
+   "pub": "USGS",
+   "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.atom",
+   "hint": "Disasters",
+   "kind": "usgs",
+   "prio": 6
+  },
+  {
+   "name": "Space.com",
+   "pub": "Space.com",
+   "url": "https://www.space.com/feeds/all",
+   "hint": "Space",
+   "prio": 5,
+   "max_age_h": 48,
+   "cap": 2
+  },
+  {
+   "name": "NASA",
+   "pub": "NASA",
+   "url": "https://www.nasa.gov/news-release/feed/",
+   "hint": "Space",
+   "prio": 5,
+   "max_age_h": 72,
+   "cap": 2
+  },
+  {
+   "name": "ESA",
+   "pub": "ESA",
+   "url": "https://www.esa.int/rssfeed/Our_Activities/Space_News",
+   "hint": "Space",
+   "prio": 5,
+   "max_age_h": 96,
+   "cap": 1
+  },
+  {
+   "name": "Carbon Brief",
+   "pub": "Carbon Brief",
+   "url": "https://www.carbonbrief.org/feed/",
+   "hint": "Climate & Environment",
+   "prio": 5,
+   "max_age_h": 72,
+   "cap": 2
+  },
+  {
+   "name": "Utility Dive",
+   "pub": "Utility Dive",
+   "url": "https://www.utilitydive.com/feeds/news/",
+   "hint": "Energy",
+   "prio": 5,
+   "max_age_h": 48,
+   "cap": 2
+  },
+  {
+   "name": "WSJ Markets",
+   "pub": "WSJ",
+   "url": "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",
+   "hint": "Business & Markets",
+   "prio": 3,
+   "max_age_h": 36,
+   "cap": 2
+  },
+  {
+   "name": "CNBC Business",
+   "pub": "CNBC",
+   "url": "https://www.cnbc.com/id/10001147/device/rss/rss.html",
+   "hint": "Business & Markets",
+   "prio": 4,
+   "max_age_h": 48,
+   "cap": 2
+  },
+  {
+   "name": "MarketWatch",
+   "pub": "MarketWatch",
+   "url": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+   "hint": "Business & Markets",
+   "prio": 4,
+   "max_age_h": 36,
+   "cap": 2
+  },
+  {
+   "name": "Mongabay",
+   "pub": "Mongabay",
+   "url": "https://news.mongabay.com/feed/",
+   "hint": "Climate & Environment",
+   "prio": 5,
+   "max_age_h": 48,
+   "cap": 2
+  },
+  {
+   "name": "Phys.org Earth",
+   "pub": "Phys.org",
+   "url": "https://phys.org/rss-feed/earth-news/",
+   "hint": "Climate & Environment",
+   "prio": 5,
+   "max_age_h": 48,
+   "cap": 2
+  },
+  {
+   "name": "ScienceDaily Environment",
+   "pub": "ScienceDaily",
+   "url": "https://www.sciencedaily.com/rss/earth_climate.xml",
+   "hint": "Climate & Environment",
+   "prio": 5,
+   "max_age_h": 72,
+   "cap": 1
+  }
+ ],
+ "signals": [
+  {
+   "name": "Google News top stories",
+   "url": "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+   "signal": true
+  },
+  {
+   "name": "Google News BUSINESS",
+   "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en",
+   "signal": true
+  },
+  {
+   "name": "Google News TECHNOLOGY",
+   "url": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en",
+   "signal": true
+  },
+  {
+   "name": "Google News SCIENCE",
+   "url": "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
+   "signal": true
+  },
+  {
+   "name": "Google News WORLD",
+   "url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
+   "signal": true
+  }
+ ],
+ "excluded": [
+  "Fox News",
+  "AP (AllSides: Lean Left)",
+  "Bloomberg (AllSides: Lean Left)",
+  "The Economist (AllSides: Lean Left)",
+  "Axios (AllSides: Lean Left)",
+  "Christian Science Monitor (user request)"
+ ],
+ "sweden": [
+  {
+   "name": "SVT Nyheter",
+   "pub": "SVT",
+   "url": "https://www.svt.se/nyheter/rss.xml",
+   "prio": 1,
+   "max": 40
+  },
+  {
+   "name": "SR Ekot",
+   "pub": "Sveriges Radio Ekot",
+   "url": "https://api.sr.se/api/rss/program/83",
+   "prio": 1
+  },
+  {
+   "name": "DN",
+   "pub": "Dagens Nyheter",
+   "url": "https://www.dn.se/rss/",
+   "prio": 2,
+   "max": 40
+  },
+  {
+   "name": "SvD",
+   "pub": "Svenska Dagbladet",
+   "url": "https://www.svd.se/feed/articles.rss",
+   "prio": 2
+  },
+  {
+   "name": "Di",
+   "pub": "Dagens industri",
+   "url": "https://www.di.se/rss",
+   "prio": 2
+  },
+  {
+   "name": "Sydsvenskan",
+   "pub": "Sydsvenskan",
+   "url": "https://www.sydsvenskan.se/rss.xml",
+   "prio": 3
+  }
+ ],
+ "sweden_signals": [
+  {
+   "name": "Google Nyheter Sverige",
+   "url": "https://news.google.com/rss?hl=sv&gl=SE&ceid=SE:sv",
+   "signal": true
+  },
+  {
+   "name": "Google Nyheter Sverige NATION",
+   "url": "https://news.google.com/rss/headlines/section/topic/NATION?hl=sv&gl=SE&ceid=SE:sv",
+   "signal": true
+  }
+ ],
+ "sweden_excluded": [
+  "Aftonbladet (tabloid)",
+  "Expressen (tabloid)",
+  "GP (feed broken)"
+ ]
+}

@@ -1,0 +1,52 @@
+<script>
+(function(){
+var APP='__APP__', LS='key_'+APP, qs=new URLSearchParams(location.search), K=qs.get('k')||'';
+try{ if(K) localStorage.setItem(LS,K); else K=localStorage.getItem(LS)||'' }catch(e){}
+window.__TUNNEL=1; window.__STATIC=1;
+function b64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+var keyP=null; function getKey(){return keyP||(keyP=crypto.subtle.importKey('raw',b64(K),{name:'AES-GCM'},false,['decrypt']))}
+var _fetch=window.fetch.bind(window), mem={}, BASE=new URL('data/',location.href);
+async function get(name){
+  var r=await _fetch(new URL(name+'.enc?t='+Date.now(),BASE).href,{cache:'no-store'});
+  if(!r.ok) throw new Error(r.status===404?'No data yet - try again in a few minutes':'Data HTTP '+r.status);
+  var u=new Uint8Array(await r.arrayBuffer()), pt;
+  try{ pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},await getKey(),u.slice(12)) }
+  catch(e){ throw new Error('Wrong or missing key - open the app from its private link') }
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function load(name,force){
+  var c=mem[name]; if(c&&!force&&Date.now()-c.t<60000) return c.p;
+  var p=get(name); mem[name]={t:Date.now(),p:p};
+  p.catch(function(){ if(mem[name]&&mem[name].p===p) delete mem[name] }); return p;
+}
+function J(o,s){return new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}})}
+function safe(s){return String(s).replace(/[^A-Za-z0-9]/g,function(c){return '_'+('0'+c.charCodeAt(0).toString(16).toUpperCase()).slice(-2)})}
+var ROUTES={
+ news: async function(p,q){ if(p==='/api/news') return load('news',q.has('refresh')); return J({error:'not found'},404) },
+ econ: async function(p,q,m,b){
+  var core=await load('core'), avail=core.avail||[];
+  if(p==='/api/watchlist'){
+    if(m==='POST'){ var l=[]; try{l=JSON.parse(b)}catch(e){} l=(l||[]).filter(function(s){return avail.indexOf(s)>=0}); try{localStorage.setItem('wl_'+APP,JSON.stringify(l))}catch(e){} return l }
+    try{ var s=JSON.parse(localStorage.getItem('wl_'+APP)||'null'); if(Array.isArray(s)&&s.length) return s.filter(function(x){return avail.indexOf(x)>=0}) }catch(e){}
+    return core.watchlist }
+  if(p==='/api/quotes') return (q.get('s')||'').split(',').filter(Boolean).map(function(s){return core.quotes[s]||{symbol:s,error:'Not in this app - ask the agent to add it'}});
+  if(p==='/api/chart'){ var c=await load('c/'+safe(q.get('s')||'')), r=c[q.get('range')||'1D']; if(!r) throw new Error('no chart data'); return r }
+  if(p==='/api/macro') return core.macro;
+  if(p==='/api/macro/series'){ var x=(core.series||{})[q.get('id')]; if(!x) throw new Error('no series data'); return x }
+  if(p==='/api/news') return core.news;
+  if(p==='/api/trending') return core.trending;
+  return J({error:'not found'},404) }
+};
+window.fetch=async function(u,o){
+  var url; try{url=new URL(typeof u==='string'?u:((u&&u.url)||String(u)),location.href)}catch(e){return _fetch(u,o)}
+  var i=url.pathname.indexOf('/api/');
+  if(url.origin!==location.origin||i<0) return _fetch(u,o);
+  if(!K) return J({error:'This app needs its private link.'},403);
+  try{ var v=await ROUTES[APP](url.pathname.slice(i),url.searchParams,((o&&o.method)||'GET').toUpperCase(),o&&o.body); return v instanceof Response?v:J(v) }
+  catch(e){ return J({error:String((e&&e.message)||e)},502) }
+};
+if(APP==='econ'){ var WS=function(){this.readyState=0}; WS.CONNECTING=0;WS.OPEN=1;WS.CLOSING=2;WS.CLOSED=3;
+  WS.prototype.send=WS.prototype.close=WS.prototype.addEventListener=WS.prototype.removeEventListener=function(){}; window.WebSocket=WS }
+if(!K) document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML='<div style="padding:40px;font:16px system-ui;color:#d7dde8;background:#0b0e14;min-height:100vh">This app needs its private link. Open it once from the link the agent gave you.</div>'});
+})();
+</script>

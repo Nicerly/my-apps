@@ -1,0 +1,120 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<script>
+(function(){
+var APP='news', LS='key_'+APP, qs=new URLSearchParams(location.search), K=qs.get('k')||'';
+try{ if(K) localStorage.setItem(LS,K); else K=localStorage.getItem(LS)||'' }catch(e){}
+window.__TUNNEL=1; window.__STATIC=1;
+function b64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+var keyP=null; function getKey(){return keyP||(keyP=crypto.subtle.importKey('raw',b64(K),{name:'AES-GCM'},false,['decrypt']))}
+var _fetch=window.fetch.bind(window), mem={}, BASE=new URL('data/',location.href);
+async function get(name){
+  var r=await _fetch(new URL(name+'.enc?t='+Date.now(),BASE).href,{cache:'no-store'});
+  if(!r.ok) throw new Error(r.status===404?'No data yet - try again in a few minutes':'Data HTTP '+r.status);
+  var u=new Uint8Array(await r.arrayBuffer()), pt;
+  try{ pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},await getKey(),u.slice(12)) }
+  catch(e){ throw new Error('Wrong or missing key - open the app from its private link') }
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function load(name,force){
+  var c=mem[name]; if(c&&!force&&Date.now()-c.t<60000) return c.p;
+  var p=get(name); mem[name]={t:Date.now(),p:p};
+  p.catch(function(){ if(mem[name]&&mem[name].p===p) delete mem[name] }); return p;
+}
+function J(o,s){return new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}})}
+function safe(s){return String(s).replace(/[^A-Za-z0-9]/g,function(c){return '_'+('0'+c.charCodeAt(0).toString(16).toUpperCase()).slice(-2)})}
+var ROUTES={
+ news: async function(p,q){ if(p==='/api/news') return load('news',q.has('refresh')); return J({error:'not found'},404) },
+ econ: async function(p,q,m,b){
+  var core=await load('core'), avail=core.avail||[];
+  if(p==='/api/watchlist'){
+    if(m==='POST'){ var l=[]; try{l=JSON.parse(b)}catch(e){} l=(l||[]).filter(function(s){return avail.indexOf(s)>=0}); try{localStorage.setItem('wl_'+APP,JSON.stringify(l))}catch(e){} return l }
+    try{ var s=JSON.parse(localStorage.getItem('wl_'+APP)||'null'); if(Array.isArray(s)&&s.length) return s.filter(function(x){return avail.indexOf(x)>=0}) }catch(e){}
+    return core.watchlist }
+  if(p==='/api/quotes') return (q.get('s')||'').split(',').filter(Boolean).map(function(s){return core.quotes[s]||{symbol:s,error:'Not in this app - ask the agent to add it'}});
+  if(p==='/api/chart'){ var c=await load('c/'+safe(q.get('s')||'')), r=c[q.get('range')||'1D']; if(!r) throw new Error('no chart data'); return r }
+  if(p==='/api/macro') return core.macro;
+  if(p==='/api/macro/series'){ var x=(core.series||{})[q.get('id')]; if(!x) throw new Error('no series data'); return x }
+  if(p==='/api/news') return core.news;
+  if(p==='/api/trending') return core.trending;
+  return J({error:'not found'},404) }
+};
+window.fetch=async function(u,o){
+  var url; try{url=new URL(typeof u==='string'?u:((u&&u.url)||String(u)),location.href)}catch(e){return _fetch(u,o)}
+  var i=url.pathname.indexOf('/api/');
+  if(url.origin!==location.origin||i<0) return _fetch(u,o);
+  if(!K) return J({error:'This app needs its private link.'},403);
+  try{ var v=await ROUTES[APP](url.pathname.slice(i),url.searchParams,((o&&o.method)||'GET').toUpperCase(),o&&o.body); return v instanceof Response?v:J(v) }
+  catch(e){ return J({error:String((e&&e.message)||e)},502) }
+};
+if(APP==='econ'){ var WS=function(){this.readyState=0}; WS.CONNECTING=0;WS.OPEN=1;WS.CLOSING=2;WS.CLOSED=3;
+  WS.prototype.send=WS.prototype.close=WS.prototype.addEventListener=WS.prototype.removeEventListener=function(){}; window.WebSocket=WS }
+if(!K) document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML='<div style="padding:40px;font:16px system-ui;color:#d7dde8;background:#0b0e14;min-height:100vh">This app needs its private link. Open it once from the link the agent gave you.</div>'});
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>News App</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News App"><meta name="theme-color" content="#0b0e14">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#0b0e14;--card:#121722;--line:#1f2633;--fg:#e6eaf2;--mut:#8b95a7;--acc:#5aa9ff}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:rgba(11,14,20,.95);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:20px;display:flex;align-items:center;gap:8px}
+#upd{color:var(--mut);font-size:12px;font-weight:400;margin-left:auto}
+#rf{background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:3px 10px;font-size:16px}
+#chips{display:flex;gap:6px;overflow-x:auto;padding-top:9px;scrollbar-width:none}#chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:16px;padding:5px 12px;font-size:13px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#04111f;font-weight:600}
+main{padding:10px 12px calc(env(safe-area-inset-bottom) + 24px)}
+.st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px}
+.top{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);margin-bottom:5px}
+.rk{font-weight:700;color:var(--fg);min-width:16px}
+.tag{border-radius:6px;padding:1px 7px;font-weight:600;font-size:11px}
+a.h{color:var(--fg);text-decoration:none;font-size:16px;font-weight:600;display:block;line-height:1.3}
+.sm{color:var(--mut);font-size:13.5px;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.src{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+.src a{font-size:12px;color:var(--acc);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.empty{color:var(--mut);text-align:center;padding:40px 10px}
+footer{color:var(--mut);font-size:11.5px;padding:8px 4px 0;line-height:1.5}
+</style></head><body>
+<header><h1>Top stories <span id="upd"></span><button id="rf" aria-label="Refresh">↻</button></h1><div id="chips"></div></header>
+<main><div id="list"></div><footer id="foot"></footer></main>
+<script>
+const TOPICS=['All','Sweden','Economy','Business & Markets','Energy','Climate & Environment','Science','Space','Technology','Social unrest','Disasters']
+const COL={'Economy':'#3fb950','Social unrest':'#f0883e','Science':'#a371f7','Technology':'#5aa9ff','Disasters':'#f85149','Business & Markets':'#db61a2','Energy':'#e3b341','Climate & Environment':'#7ee787','Space':'#56d4dd','Sverige':'#ffd33d'}
+let data=null, busy=false, cur=localStorage.getItem('topic')||'All'
+if(!TOPICS.includes(cur)) cur='All'
+const $=id=>document.getElementById(id)
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+const safe=u=>/^https?:\/\//i.test(u||'')?u:'#'
+function ago(t){const m=Math.max(0,(Date.now()/1000-t)/60);return m<60?Math.round(m)+'m ago':m<1440?Math.round(m/60)+'h ago':Math.round(m/1440)+'d ago'}
+function render(){
+  $('chips').innerHTML=TOPICS.map(t=>`<button class="chip${t===cur?' on':''}" data-t="${esc(t)}">${esc(t)}</button>`).join('')
+  const L=$('list')
+  if(!data){L.innerHTML='<div class="empty">Loading today’s top stories…</div>';return}
+  $('upd').textContent=data.updated?'Updated '+new Date(data.updated*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''
+  const su=cur==='Sweden'?(data.sweden_sources||[]):(data.sources_used||[]); $('foot').textContent=su.length?(cur==='Sweden'?'Källor: ':'Sources: ')+su.join(', ')+'. Ranked by how many independent outlets cover a story, and how recent it is.':''
+  const arr=cur==='All'?(data.stories||[]):cur==='Sweden'?(data.sweden||[]):((data.by_topic||{})[cur]||[])
+  if(!arr.length){L.innerHTML=`<div class="empty">No ${esc(cur)} stories right now.</div>`;return}
+  L.innerHTML=arr.map((s,i)=>{const c=COL[s.topic]||'#8b95a7'
+    const src=(s.sources||[]).map(x=>`<a href="${esc(safe(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>`).join('')
+    return `<article class="st"${cur==='Sweden'?' lang="sv"':''}><div class="top"><span class="rk">${i+1}</span><span class="tag" style="color:${c};background:${c}22">${esc(s.topic)}</span><span>${s.n_sources} source${s.n_sources>1?'s':''}</span><span>· ${ago(s.time)}</span></div>
+<a class="h" href="${esc(safe(s.url))}" target="_blank" rel="noopener noreferrer">${esc(s.title)}</a>${s.summary?`<div class="sm">${esc(s.summary)}</div>`:''}<div class="src">${src}</div></article>`}).join('')
+}
+async function load(force){
+  if(busy)return; busy=true; $('rf').textContent='…'
+  try{const r=await fetch('/api/news'+(force?'?refresh=1':''),{cache:'no-store',credentials:'same-origin'})
+    if(r.status===403){$('list').innerHTML='<div class="empty">Access expired. Open News App from its private link again.</div>';return}
+    data=await r.json(); render()
+  }catch(e){ if(!data) $('list').innerHTML='<div class="empty">Couldn’t load the news. Tap ↻ to retry.</div>' }
+  finally{busy=false; $('rf').textContent='↻'}
+}
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b)return; cur=b.dataset.t; localStorage.setItem('topic',cur); render(); window.scrollTo(0,0)})
+$('rf').addEventListener('click',()=>load(true))
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&data&&Date.now()/1000-data.updated>600) load()})
+setInterval(()=>{if(!document.hidden) load()},10*60*1000)
+render(); load()
+</script></body></html>
