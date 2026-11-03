@@ -1,195 +1,238 @@
+"""Midterms 2026 data from journalism sources only: The New York Times (live results, race calls,
+seat counts, race ratings), Inside Elections (race ratings) and polls sponsored by news organisations
+(collected by VoteHub). No betting or prediction markets. Output is public, unencrypted JSON."""
+import json, re, time, datetime, urllib.request, urllib.parse
+DATE = "2026-11-03"
+NYT = "https://static01.nyt.com/elections-assets/pages/data/%s/results-%s.json"
+IE = "https://insideelections.com/wp-content/themes/inside-elections/cache/ratings_latest_%s_year=2026_district=all_clean.json"
+VH = "https://api.votehub.com/polls"
+UA = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "Accept": "application/json,*/*"}
+OFFICES = {"senate": "S", "house": "H", "governor": "G"}
+STATES = dict(x.split(":") for x in ("AL:Alabama,AK:Alaska,AZ:Arizona,AR:Arkansas,CA:California,CO:Colorado,CT:Connecticut,DE:Delaware,"
+    "FL:Florida,GA:Georgia,HI:Hawaii,ID:Idaho,IL:Illinois,IN:Indiana,IA:Iowa,KS:Kansas,KY:Kentucky,LA:Louisiana,ME:Maine,MD:Maryland,"
+    "MA:Massachusetts,MI:Michigan,MN:Minnesota,MS:Mississippi,MO:Missouri,MT:Montana,NE:Nebraska,NV:Nevada,NH:New Hampshire,"
+    "NJ:New Jersey,NM:New Mexico,NY:New York,NC:North Carolina,ND:North Dakota,OH:Ohio,OK:Oklahoma,OR:Oregon,PA:Pennsylvania,"
+    "RI:Rhode Island,SC:South Carolina,SD:South Dakota,TN:Tennessee,TX:Texas,UT:Utah,VT:Vermont,VA:Virginia,WA:Washington,"
+    "WV:West Virginia,WI:Wisconsin,WY:Wyoming,DC:District of Columbia").split(","))
+AT_LARGE = {"AK", "DE", "ND", "SD", "VT", "WY"}
+ROM = {"I": 1, "II": 2, "III": 3}
+PARTY = {"DEM": "D", "GOP": "R", "REP": "R", "IND": "I", "LIB": "L", "GRN": "G"}
+CALL = {"too_early": "Too early to call", "too_close": "Too close to call", "uncalled": "Not called yet",
+        "called": "Called", "runoff": "Heading to a runoff", "won": "Called"}
+MEDIA = re.compile(r"New York Times|\bNYT\b|\bCNN\b|Fox News|\bABC\b|Washington Post|\bCBS\b|\bNBC\b|Wall Street Journal|\bWSJ\b|"
+                   r"Reuters|Economist|Associated Press|AP-NORC|\bNPR\b|\bPBS\b|USA Today|Bloomberg|Los Angeles Times|Financial Times|\bCNBC\b|\bMSNBC\b", re.I)
+SOURCES = [
+    {"name": "The New York Times", "what": "Live results, race calls, seat counts and race ratings",
+     "url": "https://www.nytimes.com/interactive/2026/11/03/us/elections/results-senate.html"},
+    {"name": "Inside Elections (Nathan L. Gonzales)", "what": "Nonpartisan race ratings", "url": "https://insideelections.com/ratings/senate"},
+    {"name": "Polls sponsored by news organisations (e.g. NYT/Siena, CNN, Fox News, CBS, Reuters/Ipsos, The Economist/YouGov)",
+     "what": "Generic congressional ballot and Trump approval; only polls run for news outlets are kept (list collected by VoteHub)",
+     "url": "https://votehub.com/polls/"},
+]
 
-"""Election data builder: Polymarket (race + control odds), Kalshi (control odds), VoteHub (poll averages)."""
-import json, re, time, urllib.request, urllib.parse
-UA = {"User-Agent": "MyAppsElection/1.0 (personal iPhone app)"}
-DIAG = {}
-def jget(url, params=None, tries=3):
-    if params: url += ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
-    err = None
+def getj(url, tries=3):
+    last = None
     for i in range(tries):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=40) as r:
-                return json.loads(r.read())
+                return json.loads(r.read().decode("utf-8"))
         except Exception as e:
-            err = e; time.sleep(2 * (i + 1))
-    raise err
-STATES = {"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY"}
-def price(m):
-    try: p = json.loads(m.get("outcomePrices") or "null")
-    except Exception: p = None
-    if not p: return None
-    try: return float(p[0])
-    except Exception: return None
-def party(name):
-    n = name.strip(); m = re.search(r"\((D|R|I|L|G)\)", n)
-    if m: return m.group(1)
-    low = n.lower()
-    if low.startswith("democrat"): return "D"
-    if low.startswith("republican"): return "R"
-    if low.startswith("independent"): return "I"
-    return ""
-def poly_events():
+            last = e; time.sleep(2 + 3 * i)
+    raise last
+
+def rating(s):
+    if not s: return None
+    t = str(s).lower()
+    if "not up" in t: return None
+    if "toss" in t: return {"t": "Toss-up", "s": 0}
+    side = "D" if "dem" in t else "R" if ("rep" in t or "gop" in t) else None
+    if not side: return {"t": str(s), "s": None}
+    lvl = next((w for w in ("solid", "safe", "likely", "lean", "tilt") if w in t), "")
+    mag = {"solid": 3, "safe": 3, "likely": 2, "lean": 1, "tilt": 0.5}.get(lvl, 1)
+    return {"t": ({"safe": "Solid"}.get(lvl, lvl.capitalize()) + " " + side).strip(), "s": mag if side == "D" else -mag}
+
+def votes_of(c):
+    v = c.get("votes")
+    if isinstance(v, dict): v = v.get("total", v.get("votes"))
+    try: return int(v or 0)
+    except Exception: return 0
+
+def cand(cid, m, v, w):
+    nm = ((m.get("first_name") or "").strip() + " " + (m.get("last_name") or "").strip()).strip() or str(cid)
+    if m.get("suffix"): nm += " " + str(m["suffix"])
+    pt = m.get("party") or {}
+    p = PARTY.get(str(pt.get("nyt_id") or "").upper()) or ("I" if "indep" in str(pt.get("name") or "").lower() else "O")
+    return {"n": nm, "p": p, "pn": pt.get("name"), "v": v, "w": 1 if w else 0, "inc": 1 if m.get("incumbent") else 0,
+            "o": m.get("order") or m.get("ballot_order") or 99}
+
+def parse_race(r, off, close):
+    tru = r.get("top_reporting_unit") or {}
+    st = str(tru.get("state_postal") or str(r.get("nyt_id") or "")[:2]).upper()
+    if st not in STATES: return None
+    meta = r.get("candidate_metadata") or {}
+    won = set((r.get("outcome") or {}).get("won") or [])
+    cands, seen = [], set()
+    for c in tru.get("candidates") or []:
+        cid = c.get("nyt_id"); seen.add(cid)
+        cands.append(cand(cid, meta.get(cid) or {}, votes_of(c), c.get("winner") or cid in won))
+    for cid, m in meta.items():
+        if cid not in seen: cands.append(cand(cid, m or {}, 0, cid in won))
+    tot = sum(c["v"] for c in cands)
+    for c in cands: c["pct"] = round(100.0 * c["v"] / tot, 1) if tot else None
+    cands.sort(key=lambda c: (-c["v"], c["o"] if isinstance(c["o"], int) else 99))
+    for c in cands: c.pop("o", None)
+    seat = str(r.get("seat_number") or "").strip()
+    if off == "senate":
+        cls = int(seat) if seat.isdigit() else 2
+        label = STATES[st] + (" (special)" if cls != 2 else ""); key = f"{st}-{cls}"; srt = (STATES[st], cls)
+    elif off == "house":
+        n = int(seat) if seat.isdigit() else 0
+        al = st in AT_LARGE or n == 0 or "large" in str(r.get("seat") or "").lower()
+        label = f"{st} at-large" if al else f"{st}-{n:02d}"; key = f"{st}-{n}"; cls = n; srt = (STATES[st], n)
+    else:
+        label = STATES[st]; key = st; cls = None; srt = (STATES[st], 0)
+    w = next((c for c in cands if c["w"]), None)
+    raw = r.get("race_call_status")
+    status = "Called" if w else (CALL.get(raw) or (str(raw).replace("_", " ").capitalize() if raw else "Awaiting results"))
+    try: eevp = float(tru["eevp"]) if tru.get("eevp") is not None else None
+    except Exception: eevp = None
+    return {"key": key, "st": st, "sn": STATES[st], "label": label, "cls": cls, "_srt": srt,
+            "nyt": rating(r.get("rating") or r.get("general_rating")), "status": status, "call": raw,
+            "winner": w["p"] if w else None, "eevp": eevp, "unc": 1 if r.get("uncontested") else 0,
+            "close": close.get(st), "cands": cands, "upd": r.get("updated_at")}
+
+def ie_index(recs, off):
+    m = {}
+    for x in recs or []:
+        rt = rating(x.get("rating"))
+        if not rt: continue
+        st = str(x.get("state") or x.get("district") or "")[:2].upper()
+        if off == "senate": k = (st, ROM.get(str(x.get("office") or "").upper()))
+        elif off == "house":
+            dg = re.findall(r"\d+", str(x.get("district") or "")) or re.findall(r"\d+", str(x.get("office") or ""))
+            k = (st, int(dg[0]) if dg else 0)
+        else: k = (st, None)
+        m.setdefault(k, rt)
+    return m
+
+def ie_lookup(m, off, x):
+    st = x["st"]
+    if off == "senate":
+        r = m.get((st, x["cls"]))
+        if r is None:
+            same = [v for k, v in m.items() if k[0] == st]
+            r = same[0] if len(same) == 1 else None
+        return r
+    if off == "house":
+        r = m.get((st, x["cls"]))
+        if r is None and st in AT_LARGE: r = m.get((st, 0)) or m.get((st, 1))
+        return r
+    return m.get((st, None))
+
+def ans(p):
     out = {}
-    for closed in ("false", "true"):
-        off = 0
-        while off < (4000 if closed == "false" else 2000):
-            js = jget("https://gamma-api.polymarket.com/events", {"limit": 100, "offset": off, "closed": closed, "tag_slug": "midterms"})
-            if not js: break
-            for e in js:
-                if (e.get("createdAt") or "") >= "2025-01-01": out[e["id"]] = e
-            off += 100
-    DIAG["poly_events"] = len(out)
-    return list(out.values())
-RACE_SG = re.compile(r"^(.+?) (Senate|Governor) Election Winner\s*$")
-RACE_H = re.compile(r"^([A-Z]{2})-(\d\d|AL) House Election Winner")
-NAME_PARTY = {"Mary Peltola": "D", "Dan Osborn": "I", "Jonathan Kreiss-Tomkins": "D", "Bernadette Wilson": "R", "Xavier Becerra": "D", "Doris Matsui": "D", "Mai Vang": "D", "Scott Wiener": "D", "Connie Chan": "D", "Sydney Kamlager-Dove": "D", "Ken Calvert": "R", "Young Kim": "R"}
-def party_ctx(nm, mk, desc):
-    nm = re.sub(r"^(Sen\.|Rep\.|Gov\.|Senator|Governor)\s+", "", nm)
-    p = party(nm)
-    if p: return p
-    if nm in NAME_PARTY: return NAME_PARTY[nm]
-    for txt in (mk.get("question") or "", mk.get("description") or "", desc):
-        m = re.search(re.escape(nm) + r"\s*\((D|R|I|L|G)\b", txt)
-        if m: return m.group(1)
-        m = re.search(re.escape(nm) + r",?\s+(?:the\s+)?(?:incumbent\s+)?(Democrat|Republican|Independent)", txt)
-        if m: return m.group(1)[0]
-    return ""
-def race_from(e):
-    t = (e.get("title") or "").strip()
-    m = RACE_SG.match(t); h = RACE_H.match(t)
-    if m and m.group(1) in STATES: office, st, dist = m.group(2).lower(), STATES[m.group(1)], None
-    elif h: office, st, dist = "house", h.group(1), h.group(2)
-    else: return None
-    desc = e.get("description") or ""
-    cands = []
-    for mk in e.get("markets") or []:
-        p = price(mk); nm = (mk.get("groupItemTitle") or mk.get("question") or "").strip()
-        if p is None or not nm or re.match(r"^((Person|Party|Option|Candidate|Player) [A-Z]|[A-Z]|Other|Another .*|Someone else)$", nm): continue
-        cands.append({"n": re.sub(r"^(Sen\.|Rep\.|Gov\.|Senator|Governor)\s+", "", re.sub(r"\s*\((D|R|I|L|G)\)\s*$", "", nm)), "p": round(p, 4), "pty": party_ctx(nm, mk, desc),
-                      "won": bool(mk.get("closed") and p >= 0.99)})
-    cands = [c for c in sorted(cands, key=lambda c: -c["p"]) if c["p"] >= 0.005][:4]
-    if not cands: return None
-    lab = [c for c in cands[:2] if c["pty"]]
-    if st not in ("CA", "WA", "LA") and len(cands) >= 2 and len(lab) == 1 and lab[0]["pty"] in ("D", "R"):
-        for c in cands[:2]:
-            if not c["pty"] and not re.match(r"^(Other|Independent|Field|Any)", c["n"], re.I):
-                c["pty"] = "R" if lab[0]["pty"] == "D" else "D"; c["inf"] = 1
-    top = cands[0]
-    return {"office": office, "st": st, "d": dist, "slug": e.get("slug"), "vol": round(float(e.get("volume") or 0)),
-            "cands": cands, "lead": top["pty"], "called": top["won"] or (bool(e.get("closed")) and top["p"] >= 0.99)}
-def pick_two(e):
-    r = {}
-    for mk in e.get("markets") or []:
-        p = price(mk); nm = (mk.get("groupItemTitle") or "")
-        if p is None: continue
-        if nm.startswith("Democrat"): r["D"] = round(p, 4)
-        elif nm.startswith("Republican"): r["R"] = round(p, 4)
-    return r
-def buckets(e):
-    out = []
-    for mk in e.get("markets") or []:
-        p = price(mk)
-        if p is None or re.match(r"^((Person|Party|Option|Candidate|Player) [A-Z]|[A-Z]|Other|Another .*|Someone else)$", mk.get("groupItemTitle") or ""): continue
-        try: th = float(mk.get("groupItemThreshold") or 0)
-        except Exception: th = 0
-        out.append((th, {"b": mk.get("groupItemTitle"), "p": round(p, 4)}))
-    return [b for _, b in sorted(out, key=lambda x: x[0])]
-def polymarket():
-    evs = poly_events(); races = {}; control = {}; seats = {}; balance = []
-    for e in evs:
-        t = (e.get("title") or "").strip(); s = e.get("slug") or ""
-        if s.startswith("which-party-will-win-the-house-in-2026"): control["house"] = pick_two(e)
-        elif s.startswith("which-party-will-win-the-senate-in-2026"): control["senate"] = pick_two(e)
-        elif s.startswith("balance-of-power-2026-midterms"):
-            balance = [{"b": mk.get("groupItemTitle"), "p": price(mk)} for mk in e.get("markets") or [] if price(mk) is not None]
-        elif re.match(r"^Republican (Senate|House) seats after the 2026", t):
-            seats[("senate" if "Senate" in t else "house")] = buckets(e)
-        else:
-            r = race_from(e)
-            if r:
-                k = (r["office"], r["st"], r["d"])
-                if k not in races or r["vol"] > races[k]["vol"]: races[k] = r
-    out = {"senate": [], "governor": [], "house": []}
-    for r in races.values(): out[r["office"]].append(r)
-    for k in out: out[k].sort(key=lambda r: (r["st"], r["d"] or ""))
-    DIAG["poly_races"] = {k: len(v) for k, v in out.items()}
-    return {"control": control, "balance": balance, "seats": seats, "races": out}
-def kalshi():
-    res = {}; tried = {}
-    for ser, ch in (("CONTROLH", "house"), ("CONTROLS", "senate")):
-        evs = []
-        for url in (f"https://api.elections.kalshi.com/trade-api/v2/events?series_ticker={ser}&with_nested_markets=true&limit=50",
-                    f"https://api.elections.kalshi.com/trade-api/v2/events/{ser}-2026?with_nested_markets=true",
-                    f"https://api.elections.kalshi.com/trade-api/v2/events/{ser}-26?with_nested_markets=true"):
-            try:
-                j = jget(url, tries=1); evs += j.get("events") or ([j["event"]] if j.get("event") else [])
-            except Exception as ex: tried[url[-60:]] = repr(ex)[:80]
-        for e in evs:
-            if not re.search(r"2026|-26$", e.get("event_ticker", "")): continue
-            mks = e.get("markets") or []
-            for m in mks:
-                pty = ((m.get("custom_strike") or {}).get("Party") or m.get("yes_sub_title") or "")
-                try:
-                    b, a = float(m.get("yes_bid_dollars") or 0), float(m.get("yes_ask_dollars") or 0)
-                    p = (a + b) / 2 if b and a else float(m.get("last_price_dollars") or 0)
-                except Exception: continue
-                if pty.startswith("Dem"): res.setdefault(ch, {})["D"] = round(p, 4)
-                elif pty.startswith("Rep"): res.setdefault(ch, {})["R"] = round(p, 4)
-    DIAG["kalshi"] = {"found": res, "errors": tried}
-    return res
-def _ans(a):
-    c = next((a[k] for k in ("choice", "answer", "party", "name", "candidate") if isinstance(a, dict) and a.get(k)), "")
-    v = next((a[k] for k in ("pct", "percent", "value", "share") if isinstance(a, dict) and a.get(k) is not None), None)
-    try: v = float(v)
-    except Exception: v = None
-    return str(c), v
-def poll_avg(js, a_key, b_key, subject=None, days=None):
-    rows = []
-    for p in js:
-        if subject and subject.lower() not in json.dumps(p.get("subject") or p.get("seat_name") or "").lower(): continue
-        A = B = None
-        for a in p.get("answers") or []:
-            c, v = _ans(a)
-            if v is None: continue
-            if a_key(c): A = v
-            elif b_key(c): B = v
-        if A is None or B is None or not p.get("end_date"): continue
-        rows.append({"who": p.get("pollster") or "?", "end": p["end_date"][:10], "a": A, "b": B, "pop": p.get("population") or "", "n": p.get("sample_size")})
-    if not rows: return None
-    rows.sort(key=lambda r: r["end"], reverse=True)
-    latest = rows[0]["end"]
-    for days in (21, 30, 45, 60, 90):
-        t0 = time.mktime(time.strptime(latest, "%Y-%m-%d")) - days * 86400
-        cut = time.strftime("%Y-%m-%d", time.localtime(t0)); per = {}
-        for r in rows:
-            if r["end"] >= cut and r["who"] not in per: per[r["who"]] = r
-        if len(per) >= 6: break
-    use = list(per.values())
-    return {"a": round(sum(r["a"] for r in use) / len(use), 1), "b": round(sum(r["b"] for r in use) / len(use), 1),
-            "pollsters": len(use), "since": cut, "latest": latest, "days": days, "recent": rows[:12]}
-def polls():
-    out = {}
-    try:
-        js = jget("https://api.votehub.com/polls", {"poll_type": "generic-ballot"})
-        g = poll_avg(js, lambda c: c.lower().startswith("dem") or c == "D", lambda c: c.lower().startswith("rep") or c == "R")
-        if g: out["generic"] = g
-        DIAG["vh_generic"] = len(js)
-    except Exception as ex: DIAG["vh_generic_err"] = repr(ex)[:150]
-    try:
-        js = jget("https://api.votehub.com/polls", {"poll_type": "approval"})
-        g = poll_avg(js, lambda c: c.lower().startswith("approve"), lambda c: c.lower().startswith("disapprove"), subject="trump")
-        if g: out["approval"] = g
-        DIAG["vh_approval"] = len(js)
-    except Exception as ex: DIAG["vh_approval_err"] = repr(ex)[:150]
+    for a in p.get("answers") or []:
+        k = str(a.get("choice") or a.get("answer") or a.get("name") or "").strip().lower()
+        v = a.get("pct", a.get("value", a.get("percent")))
+        try: out[k] = float(v)
+        except Exception: pass
     return out
+
+def pick(a, names):
+    for k, v in a.items():
+        if k in names or any(len(n) > 2 and k.startswith(n) for n in names): return v
+    return None
+
+def media(polls, kx, ky, fx, fy):
+    rows = []
+    for p in polls or []:
+        sp = [str(s) for s in (p.get("sponsors") or []) if s]
+        pol = str(p.get("pollster") or "")
+        who = "/".join(dict.fromkeys(sp + ([pol] if pol else [])))
+        if not MEDIA.search(who): continue
+        a = ans(p); x, y = pick(a, fx), pick(a, fy)
+        if x is None or y is None: continue
+        u = p.get("url") or p.get("source")
+        rows.append({"who": who, "end": str(p.get("end_date") or "")[:10], "n": p.get("sample_size"), "pop": p.get("population"),
+                     kx: round(x, 1), ky: round(y, 1), "url": u if isinstance(u, str) and u.startswith("http") else None})
+    rows.sort(key=lambda r: r["end"], reverse=True)
+    out = {"avg": None, "polls": rows[:15]}
+    if rows:
+        try: cut = (datetime.date.fromisoformat(rows[0]["end"]) - datetime.timedelta(days=45)).isoformat()
+        except Exception: cut = ""
+        used, seen = [], set()
+        for r in rows:
+            if r["end"] < cut: break
+            if r["who"] in seen: continue
+            seen.add(r["who"]); used.append(r)
+        if used:
+            out["avg"] = {kx: round(sum(r[kx] for r in used) / len(used), 1), ky: round(sum(r[ky] for r in used) / len(used), 1),
+                          "n": len(used), "from": used[-1]["end"], "to": used[0]["end"]}
+    return out
+
+def vh(**params):
+    return getj(VH + "?" + urllib.parse.urlencode(params))
+
+def polls(errs):
+    out = {}
+    try:
+        out["generic"] = media(vh(poll_type="generic-ballot"), "d", "r", ("d", "dem", "democrat", "democrats", "democratic"),
+                               ("r", "rep", "gop", "republican", "republicans"))
+    except Exception as e: errs.append("Polls (generic ballot): " + type(e).__name__)
+    try:
+        try: ap = vh(poll_type="approval", subject="Trump")
+        except Exception: ap = []
+        if not ap: ap = vh(poll_type="approval")
+        ap = [p for p in ap if "trump" in str(p.get("subject") or "trump").lower()]
+        out["approval"] = media(ap, "ap", "dis", ("approve", "approval"), ("disapprove", "disapproval"))
+    except Exception as e: errs.append("Polls (approval): " + type(e).__name__)
+    return out
+
 def build():
-    d = {"built": int(time.time()), "poly": polymarket(), "polls": polls()}
-    try: d["kalshi"] = kalshi()
-    except Exception as ex: d["kalshi"] = {}; DIAG["kalshi_err"] = repr(ex)[:150]
-    if not any(d["poly"]["races"].values()): raise RuntimeError("no Polymarket races")
-    d["sources"] = ["Polymarket", "Kalshi", "VoteHub"]
-    return d
-def run(put, key, keep_old):
-    d = build(); put("election", "election", d, key)
-    return {"races": {k: len(v) for k, v in d["poly"]["races"].items()}, "control": d["poly"]["control"], "kalshi": d.get("kalshi"),
-            "polls": {k: (v["a"], v["b"], v["pollsters"]) for k, v in d["polls"].items()}, "diag": DIAG}
+    out = {"v": 2, "date": DATE, "offices": {}, "errors": [], "sources": SOURCES}
+    ie = {}
+    for off in OFFICES:
+        try: ie[off] = getj(IE % off).get("ratings") or []
+        except Exception as e: ie[off] = []; out["errors"].append(f"Inside Elections {off}: {type(e).__name__}")
+    close = {}
+    for off, code in OFFICES.items():
+        try: d = getj(NYT % (DATE, off))
+        except Exception as e:
+            out["errors"].append(f"NYT {off}: {type(e).__name__}"); continue
+        for pc in d.get("pollClosingTimes") or []:
+            s = ((pc.get("reporting_unit") or {}).get("state_postal") or "").upper(); t = pc.get("poll_closing_time")
+            if s and t and t > close.get(s, ""): close[s] = t
+        iem = ie_index(ie.get(off), off)
+        races, seen = [], set()
+        for r in d.get("races") or []:
+            if r.get("office_id") not in (code, None): continue
+            x = parse_race(r, off, close)
+            if not x or x["key"] in seen: continue
+            seen.add(x["key"]); x["ie"] = ie_lookup(iem, off, x); races.append(x)
+        races.sort(key=lambda x: x["_srt"])
+        for x in races: x.pop("_srt", None)
+        won, called = {}, 0
+        for x in races:
+            if x["winner"]:
+                called += 1; k = x["winner"] if x["winner"] in ("D", "R") else "O"; won[k] = won.get(k, 0) + 1
+        try: ctrl = dict((d.get("partyControlData") or {}).get("results", [{}])[0].get("offices", {}).get(code) or {})
+        except Exception: ctrl = {}
+        for k in list(ctrl):
+            if k.startswith("model") or k.startswith("nyt_model"): ctrl.pop(k)
+        out["offices"][off] = {"races": races, "won": won, "called": called, "control": ctrl,
+                               "updated": (d.get("resultsMeta") or {}).get("resultsUpdatedAt")}
+    if not out["offices"]: raise RuntimeError("NYT results unavailable: " + "; ".join(out["errors"]))
+    out["polls"] = polls(out["errors"])
+    out["built"] = int(time.time())
+    return out
+
+def summary(d):
+    s = {o: len(v["races"]) for o, v in d["offices"].items()}
+    s["called"] = {o: v["called"] for o, v in d["offices"].items()}
+    s["polls"] = {k: len(v.get("polls") or []) for k, v in (d.get("polls") or {}).items()}
+    s["errors"] = d.get("errors")
+    return s
+
+if __name__ == "__main__":
+    print(json.dumps(summary(build()))[:2000])

@@ -1,164 +1,127 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Midterms">
+<meta name="theme-color" content="#0b0e14">
+<title>Midterms 2026</title>
+<style>
+:root{--bg:#0b0d12;--card:#151922;--line:#262c38;--fg:#e8eaf0;--mut:#8b93a5;--D:#3b82f6;--R:#ef4444;--O:#a3a3a3}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 8px) 14px 0;border-bottom:1px solid var(--line)}
+.hr{display:flex;align-items:baseline;gap:8px}h1{margin:0;font-size:18px;white-space:nowrap}
+#upd{color:var(--mut);font-size:11px;flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav{display:flex;gap:5px;overflow-x:auto;padding:8px 0;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:var(--card);color:var(--mut);border:1px solid var(--line);border-radius:16px;padding:6px 12px;font-size:13px}
+nav button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+main{padding:12px 12px calc(env(safe-area-inset-bottom) + 28px)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+h2{font-size:15px;margin:2px 0 8px}h3{font-size:12px;color:var(--mut);margin:16px 2px 6px;text-transform:uppercase;letter-spacing:.05em}
+.mut{color:var(--mut);font-size:12px}.err{color:#fca5a5}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#2a303c;margin:8px 0 5px}.bar i{display:block;height:100%;flex:none}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.big{font-size:22px;font-weight:700}
+.rh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.rh b{font-size:15px}
+.stt{font-size:12px;color:var(--mut);text-align:right}.called{color:#4ade80;font-weight:600}
+.rt{font-size:11.5px;color:var(--mut);margin:3px 0 6px}.rb{font-weight:600}
+.c{display:grid;grid-template-columns:minmax(0,1fr) 60px 46px;gap:8px;align-items:center;font-size:13.5px;padding:3px 0}
+.c .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb{height:6px;border-radius:3px;background:#2a303c;overflow:hidden}.pb i{display:block;height:100%}
+.pct{text-align:right;font-variant-numeric:tabular-nums}
+details summary{color:var(--mut);font-size:12px;padding-top:3px}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tools input{flex:1 1 100%;background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:9px 11px;font-size:16px}
+.chip{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:14px;padding:5px 11px;font-size:12.5px}
+.chip.on{color:var(--fg);border-color:var(--fg)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}td,th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:500}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+a{color:#93c5fd}p{margin:0 0 12px}
+/*fitfix*/main,main *{overflow-wrap:anywhere;word-break:break-word}main{overflow-x:hidden}main img,main table,main pre{max-width:100%}main pre{white-space:pre-wrap}</style></head><body>
+<header><div class="hr"><h1>🗳️ Midterms 2026</h1><span id="upd">Loading…</span></div><nav id="nav"></nav></header>
+<main id="main"><div class="card mut">Loading the latest results…</div></main>
 <script>
 (function(){
-var APP='election', LS='key_'+APP, qs=new URLSearchParams(location.search), K=qs.get('k')||'';
-try{ if(K) localStorage.setItem(LS,K); else K=localStorage.getItem(LS)||'' }catch(e){}
-window.__TUNNEL=1; window.__STATIC=1;
-function b64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
-var keyP=null; function getKey(){return keyP||(keyP=crypto.subtle.importKey('raw',b64(K),{name:'AES-GCM'},false,['decrypt']))}
-var _fetch=window.fetch.bind(window), mem={}, BASE=new URL('data/',location.href);
-async function get(name){
-  var r=await _fetch(new URL(name+'.enc?t='+Date.now(),BASE).href,{cache:'no-store'});
-  if(!r.ok) throw new Error(r.status===404?'No data yet - try again in a few minutes':'Data HTTP '+r.status);
-  var u=new Uint8Array(await r.arrayBuffer()), pt;
-  try{ pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},await getKey(),u.slice(12)) }
-  catch(e){ throw new Error('Wrong or missing key - open the app from its private link') }
-  return JSON.parse(new TextDecoder().decode(pt));
-}
-function load(name,force){
-  var c=mem[name]; if(c&&!force&&Date.now()-c.t<60000) return c.p;
-  var p=get(name); mem[name]={t:Date.now(),p:p};
-  p.catch(function(){ if(mem[name]&&mem[name].p===p) delete mem[name] }); return p;
-}
-function J(o,s){return new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}})}
-function safe(s){return String(s).replace(/[^A-Za-z0-9]/g,function(c){return '_'+('0'+c.charCodeAt(0).toString(16).toUpperCase()).slice(-2)})}
-var ROUTES={
- election: async function(p,q){ if(p==='/api/election') return load('election',q.has('refresh')); return J({error:'not found'},404) },
- news: async function(p,q){ if(p==='/api/news') return load('news',q.has('refresh')); return J({error:'not found'},404) },
- econ: async function(p,q,m,b){
-  var core=await load('core'), avail=core.avail||[];
-  if(p==='/api/watchlist'){
-    if(m==='POST'){ var l=[]; try{l=JSON.parse(b)}catch(e){} l=(l||[]).filter(function(s){return avail.indexOf(s)>=0}); try{localStorage.setItem('wl_'+APP,JSON.stringify(l))}catch(e){} return l }
-    try{ var s=JSON.parse(localStorage.getItem('wl_'+APP)||'null'); if(Array.isArray(s)&&s.length) return s.filter(function(x){return avail.indexOf(x)>=0}) }catch(e){}
-    return core.watchlist }
-  if(p==='/api/quotes') return (q.get('s')||'').split(',').filter(Boolean).map(function(s){return core.quotes[s]||{symbol:s,error:'Not in this app - ask the agent to add it'}});
-  if(p==='/api/chart'){ var c=await load('c/'+safe(q.get('s')||'')), r=c[q.get('range')||'1D']; if(!r) throw new Error('no chart data'); return r }
-  if(p==='/api/macro') return core.macro;
-  if(p==='/api/macro/series'){ var x=(core.series||{})[q.get('id')]; if(!x) throw new Error('no series data'); return x }
-  if(p==='/api/news') return core.news;
-  if(p==='/api/trending') return core.trending;
-  return J({error:'not found'},404) }
-};
-window.fetch=async function(u,o){
-  var url; try{url=new URL(typeof u==='string'?u:((u&&u.url)||String(u)),location.href)}catch(e){return _fetch(u,o)}
-  var i=url.pathname.indexOf('/api/');
-  if(url.origin!==location.origin||i<0) return _fetch(u,o);
-  if(!K) return J({error:'This app needs its private link.'},403);
-  try{ var v=await ROUTES[APP](url.pathname.slice(i),url.searchParams,((o&&o.method)||'GET').toUpperCase(),o&&o.body); return v instanceof Response?v:J(v) }
-  catch(e){ return J({error:String((e&&e.message)||e)},502) }
-};
-if(APP==='econ'){ var WS=function(){this.readyState=0}; WS.CONNECTING=0;WS.OPEN=1;WS.CLOSING=2;WS.CLOSED=3;
-  WS.prototype.send=WS.prototype.close=WS.prototype.addEventListener=WS.prototype.removeEventListener=function(){}; window.WebSocket=WS }
-if(!K) document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML='<div style="padding:40px;font:16px system-ui;color:#d7dde8;background:#0b0e14;min-height:100vh">This app needs its private link. Open it once from the link the agent gave you.</div>'});
+try{ if('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())) }catch(e){}
+const TABS=[['overview','Overview'],['senate','Senate'],['house','House'],['governor','Governors'],['polls','Polls'],['about','Sources']];
+const F=[['all','All'],['comp','Competitive'],['open','Not called'],['called','Called']];
+const PC={D:'#3b82f6',R:'#ef4444',I:'#a78bfa',L:'#eab308',G:'#22c55e',O:'#9ca3af'};
+const PN={D:'Dem.',R:'Rep.',I:'Ind.',L:'Lib.',G:'Green'};
+let D=null,tab='overview',q='',filt='all',busy=false;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('en-US');
+const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+function rcol(s){if(s==null)return 'var(--mut)';if(s>=2)return '#60a5fa';if(s>0)return '#93c5fd';if(s===0)return '#fbbf24';if(s>-2)return '#fca5a5';return '#f87171'}
+function rb(l,r){return r?`${l} <span class="rb" style="color:${rcol(r.s)}">${esc(r.t)}</span>`:''}
+function comp(x){return [x.nyt,x.ie].some(r=>r&&r.s!=null&&Math.abs(r.s)<=1)}
+function nav(){$('#nav').innerHTML=TABS.map(([k,l])=>`<button data-t="${k}" class="${k===tab?'on':''}">${l}</button>`).join('')}
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;tab=b.dataset.t;q='';filt='all';nav();render();window.scrollTo(0,0)};
+function upd(){const age=(Date.now()/1000-D.built)/60;$('#upd').textContent='Updated '+tm(D.built*1000)+(age>45?' · may be out of date':'')}
+function cand(c){const col=PC[c.p]||PC.O,pl=PN[c.p]||c.pn||'Other';
+ return `<div class="c"><span class="nm">${c.w?'✓ ':''}${esc(c.n)} <span class="mut">${esc(pl)}${c.inc?' · inc.':''}${c.v?' · '+fmt(c.v):''}</span></span><span class="pb"><i style="width:${c.pct||0}%;background:${col}"></i></span><span class="pct">${c.pct!=null?c.pct.toFixed(1)+'%':'–'}</span></div>`}
+function stat(x){
+ if(x.winner){const w=x.cands.find(c=>c.w);return `<span class="called">✓ ${esc(w?w.n:'Called')}</span>`}
+ let s=esc(x.status||'');
+ if(x.eevp>0) s+=` · ${Math.min(100,Math.round(x.eevp))}% in`;
+ else if(x.close&&new Date(x.close)>new Date()) s='Polls close '+tm(x.close);
+ return s}
+function raceCard(x,pre){
+ const cs=x.cands||[],rt=[rb('NYT:',x.nyt),rb('Inside Elections:',x.ie)].filter(Boolean).join(' · ');
+ return `<div class="card"><div class="rh"><b>${esc((pre||'')+x.label)}</b><span class="stt">${stat(x)}</span></div>${rt?`<div class="rt">${rt}</div>`:''}${x.unc?'<div class="mut">Uncontested</div>':''}${cs.slice(0,3).map(cand).join('')}${cs.length>3?`<details><summary>${cs.length-3} more candidate${cs.length>4?'s':''}</summary>${cs.slice(3).map(cand).join('')}</details>`:''}</div>`}
+function chamber(k,title){
+ const o=(D.offices||{})[k];
+ if(!o) return `<div class="card"><h2>${title}</h2><div class="mut">Not available right now.</div></div>`;
+ const n=o.races.length,w=o.won||{},d=w.D||0,r=w.R||0,x=w.O||0,tw=(o.control||{}).to_win||{},pc=v=>n?(100*v/n).toFixed(2)+'%':'0';
+ let maj='';
+ if(k!=='governor'&&(tw.DEM||tw.GOP)) maj=` Majority: ${tw.DEM} seats for Democrats, ${tw.GOP} for Republicans${k==='senate'?' (including seats not up this year; the Vice President breaks ties)':''}.`;
+ return `<div class="card"><h2>${title} <span class="mut">· ${n} races</span></h2><div class="row"><span><span class="big" style="color:var(--D)">${d}</span> Dem.</span><span class="mut">${o.called||0} of ${n} called</span><span>Rep. <span class="big" style="color:var(--R)">${r}</span></span></div><div class="bar"><i style="width:${pc(d)};background:var(--D)"></i><i style="width:${pc(x)};background:var(--O)"></i><span style="flex:1"></span><i style="width:${pc(r)};background:var(--R)"></i></div><div class="mut">Races won so far${x?` · others: ${x}`:''}.${maj}</div></div>`}
+function overview(){
+ const O=D.offices||{},P=D.polls||{},g=P.generic&&P.generic.avg,a=P.approval&&P.approval.avg;
+ let h=chamber('senate','Senate')+chamber('house','House')+chamber('governor','Governors');
+ if(g||a) h+=`<div class="card"><h2>Polls by news organisations</h2>${g?`<div class="row"><span>Congress (generic ballot)</span><span><b style="color:var(--D)">D ${g.d.toFixed(1)}</b> · <b style="color:var(--R)">R ${g.r.toFixed(1)}</b></span></div>`:''}${a?`<div class="row"><span>Trump approval</span><span><b>${a.ap.toFixed(1)}%</b> approve · ${a.dis.toFixed(1)}% disapprove</span></div>`:''}<div class="mut">Details in the Polls tab.</div></div>`;
+ const watch=['senate','governor'].flatMap(k=>(O[k]?O[k].races:[]).filter(comp).map(x=>[k,x]));
+ if(watch.length) h+='<h3>Races to watch</h3>'+watch.map(([k,x])=>raceCard(x,k==='governor'?'Governor · ':'Senate · ')).join('');
+ const hc=O.house?O.house.races.filter(comp).length:0;
+ if(hc) h+=`<div class="card mut">${hc} competitive House races: open the House tab and tap “Competitive”.</div>`;
+ if(D.errors&&D.errors.length) h+=`<div class="card mut">Not updated this time: ${esc(D.errors.join('; '))}</div>`;
+ return h}
+function tools(){return `<div class="tools"><input id="q" type="search" placeholder="Search a state or candidate" value="${esc(q)}" autocomplete="off">${F.map(([k,l])=>`<button class="chip${k===filt?' on':''}" data-f="${k}">${l}</button>`).join('')}</div><div id="list"></div>`}
+function bindTools(){$('#q').oninput=e=>{q=e.target.value;fill()};document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{filt=b.dataset.f;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b));fill()})}
+function fill(){
+ const o=(D.offices||{})[tab],L=$('#list');if(!L)return;
+ if(!o){L.innerHTML='<div class="card err">These results are not available right now. They should appear on the next update.</div>';return}
+ const ql=q.trim().toLowerCase();
+ const rs=o.races.filter(x=>(filt==='all'||(filt==='comp'&&comp(x))||(filt==='called'&&!!x.winner)||(filt==='open'&&!x.winner))&&(!ql||(x.label+' '+x.sn+' '+x.st+' '+x.cands.map(c=>c.n).join(' ')).toLowerCase().includes(ql)));
+ L.innerHTML=`<div class="mut" style="margin:0 2px 8px">${rs.length} of ${o.races.length} races · ${o.called||0} called</div>`+(rs.length?rs.map(x=>raceCard(x)).join(''):'<div class="card mut">No races match.</div>')}
+function pollSec(title,P,kx,ky,lx,ly){
+ if(!P||!P.polls||!P.polls.length) return `<div class="card"><h2>${title}</h2><div class="mut">No recent polls by news organisations.</div></div>`;
+ const a=P.avg;
+ return `<div class="card"><h2>${title}</h2>${a?`<div class="row"><span>${lx} <span class="big">${a[kx].toFixed(1)}%</span></span><span>${ly} <span class="big">${a[ky].toFixed(1)}%</span></span></div><div class="mut">Average of ${a.n} poll${a.n>1?'s':''} (latest from each news organisation), ${esc(a.from)} to ${esc(a.to)}</div>`:''}<table><tr><th>Poll</th><th>Ended</th><th class="n">${lx}</th><th class="n">${ly}</th></tr>${P.polls.map(p=>`<tr><td>${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.who)}</a>`:esc(p.who)}</td><td>${esc((p.end||'').slice(5))}</td><td class="n">${p[kx]}</td><td class="n">${p[ky]}</td></tr>`).join('')}</table></div>`}
+function pollsTab(){const P=D.polls||{};return pollSec('Congress: generic ballot',P.generic,'d','r','Dem.','Rep.')+pollSec('Trump approval',P.approval,'ap','dis','Approve','Disapprove')}
+function about(){
+ return `<div class="card"><h2>Where the numbers come from</h2>${(D.sources||[]).map(s=>`<p><b>${esc(s.name)}</b><br><span class="mut">${esc(s.what)}</span><br><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(String(s.url).replace(/^https?:\/\//,''))}</a></p>`).join('')}<p class="mut">No betting or prediction markets are used. Race calls are shown as The New York Times publishes them. The data refreshes about every 15 minutes.</p><p class="mut">Last update: ${esc(new Date(D.built*1000).toLocaleString())}</p></div>`}
+function render(){
+ if(!D)return;
+ try{upd();const m=$('#main');
+  if(tab==='overview')m.innerHTML=overview();else if(tab==='polls')m.innerHTML=pollsTab();else if(tab==='about')m.innerHTML=about();
+  else{m.innerHTML=tools();bindTools();fill()}
+ }catch(e){$('#main').innerHTML='<div class="card err">Display error: '+esc(e.message)+'</div>';console.error(e)}}
+async function load(){
+ if(busy)return;busy=true;
+ try{const r=await fetch('data/election.json?t='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw new Error(r.status===404?'no data yet, try again in a few minutes':'HTTP '+r.status);
+  D=await r.json();try{localStorage.setItem('elec_v2',JSON.stringify(D))}catch(e){}
+  if($('#list')){upd();fill()}else render();
+ }catch(e){
+  if(!D){try{D=JSON.parse(localStorage.getItem('elec_v2')||'null')}catch(_){}if(D)render()}
+  if(D)$('#upd').textContent='Offline · showing saved results';
+  else $('#main').innerHTML='<div class="card err">Could not load results ('+esc(e.message)+'). Check your connection and reopen the app.</div>';
+ }finally{busy=false}}
+nav();load();setInterval(()=>{if(!document.hidden)load()},120000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 })();
-</script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Midterms 2026</title>
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Midterms"><meta name="theme-color" content="#0b0e14">
-<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
-<style>
-:root{--bg:#0b0e14;--card:#121722;--line:#1f2633;--fg:#e6eaf2;--mut:#8b95a7;--acc:#5aa9ff;--D:#3b82f6;--R:#ef4444;--I:#a78bfa;--U:#6b7280;--A:#34d399;--N:#f59e0b}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
-header{position:sticky;top:0;z-index:5;background:rgba(11,14,20,.95);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:calc(env(safe-area-inset-top) + 10px) 14px 0;border-bottom:1px solid var(--line)}
-h1{margin:0;font-size:18px;white-space:nowrap;display:flex;align-items:center;gap:8px}
-#upd{color:var(--mut);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;margin-left:auto}
-#rf{background:none;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:4px 9px;font-size:15px}
-nav{display:flex;gap:2px;margin-top:6px}
-nav button{flex:1;background:none;border:0;color:var(--mut);padding:9px 0;font-size:14px;border-bottom:2px solid transparent}
-nav button.on{color:var(--fg);border-color:var(--acc)}
-main{padding:12px 12px calc(env(safe-area-inset-bottom) + 24px)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
-.card h2{margin:0 0 8px;font-size:14px;color:var(--mut);font-weight:600}
-.big{display:flex;justify-content:space-between;font-weight:700;font-size:21px}
-.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#222a38;margin:8px 0}
-.bar i{display:block;height:100%}
-.D{color:var(--D)}.R{color:var(--R)}.I{color:var(--I)}.U{color:var(--U)}.A{color:var(--A)}.N{color:var(--N)}
-.bD{background:var(--D)}.bR{background:var(--R)}.bI{background:var(--I)}.bU{background:var(--U)}.bA{background:var(--A)}.bN{background:var(--N)}.bX{background:var(--acc)}
-.sub{color:var(--mut);font-size:12.5px}
-.row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:14px}
-.chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.chips button{background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:16px;padding:6px 12px;font-size:13px}
-.chips button.on{background:var(--acc);color:#000;border-color:var(--acc)}
-input[type=search]{width:100%;background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:9px 12px;font-size:16px;margin-bottom:10px}
-.race{display:block;color:inherit;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
-.rh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
-.ok{margin-left:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:#1f3a2a;color:#7ee2a8}
-.cand{display:grid;grid-template-columns:1fr 50px;gap:0 8px;align-items:center;font-size:14px}
-.cand b{text-align:right}
-.cand .bar{grid-column:1/3;height:6px;margin:2px 0 6px}
-.bk{display:grid;grid-template-columns:110px 1fr 44px;gap:8px;align-items:center;font-size:13px;padding:2px 0}
-.bk .bar{margin:0;height:8px}.bk span:last-child{text-align:right}
-.err{padding:30px 10px;color:#ffb4b4;text-align:center}
-.note{color:var(--mut);font-size:12px;line-height:1.5;padding:0 4px}
-details summary{color:var(--acc);font-size:13px;margin-top:6px}
-.pl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);padding:2px 0}
-</style></head><body>
-<header><h1>🗳️ Midterms 2026 <span id="upd"></span><button id="rf" aria-label="Refresh">↻</button></h1>
-<nav><button data-t="overview" class="on">Overview</button><button data-t="senate">Senate</button><button data-t="house">House</button><button data-t="governor">Governors</button></nav></header>
-<main id="main"><div class="sub" style="padding:30px;text-align:center">Loading…</div></main>
-<script>
-var NAMES={"AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"};
-var D=null,TAB='overview',FIL='close',Q='',last=0;
-var $=function(s){return document.querySelector(s)};
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function pc(p){if(p==null||isNaN(p))return '–';var x=p*100;return x>0&&x<1?'<1%':(x<100&&x>99?'>99%':Math.round(x)+'%')}
-function P(c){return c==='D'||c==='R'||c==='I'?c:'U'}
-function bar(parts){return '<div class="bar">'+parts.map(function(x){return '<i class="b'+x[1]+'" style="width:'+Math.max(0,x[0]*100).toFixed(1)+'%"></i>'}).join('')+'</div>'}
-function card(t,h){return '<div class="card"><h2>'+esc(t)+'</h2>'+h+'</div>'}
-function ago(t){var m=Math.round((Date.now()/1000-t)/60);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago'}
-function ctl(ch){var a=[],p=((D.poly||{}).control||{})[ch],k=(D.kalshi||{})[ch];
- [['Polymarket',p],['Kalshi',k]].forEach(function(x){var o=x[1];if(o&&o.D!=null&&o.R!=null&&o.D+o.R>0)a.push([x[0],o.D/(o.D+o.R)])});
- if(!a.length)return '';var d=a.reduce(function(s,x){return s+x[1]},0)/a.length;
- return card('Chance of winning the '+(ch==='house'?'House':'Senate'),'<div class="big"><span class="D">Dem '+pc(d)+'</span><span class="R">Rep '+pc(1-d)+'</span></div>'+bar([[d,'D'],[1-d,'R']])+
-  '<div class="sub">Average of '+a.length+' prediction market'+(a.length>1?'s':'')+': '+a.map(function(x){return x[0]+' Dem '+pc(x[1])}).join(' · ')+'</div>')}
-function tally(office){var rs=((D.poly||{}).races||{})[office]||[],t={res:{D:0,R:0,I:0,U:0},lead:{D:0,R:0,I:0,U:0},n:rs.length};
- rs.forEach(function(r){(r.called?t.res:t.lead)[P(r.lead)]++});return t}
-function tl(o){return ['D','R','I','U'].filter(function(k){return o[k]}).map(function(k){return '<span class="'+k+'">'+({D:'Dem',R:'Rep',I:'Ind',U:'Other/unlabeled'}[k])+' '+o[k]+'</span>'}).join(' · ')||'<span class="sub">none yet</span>'}
-function seatsCard(office,title,hold,need){var t=tally(office);if(!t.n)return '';
- var h='<div class="row"><span>Resolved</span><span>'+tl(t.res)+'</span></div><div class="row"><span>Leading in the odds</span><span>'+tl(t.lead)+'</span></div>';
- var hd=hold?hold.D:0,hr=hold?hold.R:0,tot=(hold?hd+hr:0)+t.n,d=hd+t.res.D+t.lead.D,r=hr+t.res.R+t.lead.R,o=tot-d-r;
- h+='<div class="row" style="margin-top:6px"><b>If every leader wins</b><b><span class="D">D '+d+'</span> – <span class="R">R '+r+'</span>'+(o?' <span class="U">· '+o+' other</span>':'')+'</b></div>'+bar([[d/tot,'D'],[o/tot,'U'],[r/tot,'R']]);
- h+='<div class="sub">'+need+'</div>';return card(title,h)}
-function pollCard(key,title,la,lb,ca,cb){var g=(D.polls||{})[key];if(!g)return '';var s=g.a+g.b;
- var rec=(g.recent||[]).map(function(r){return '<div class="pl"><span>'+esc(r.who)+' · '+esc(r.end)+'</span><span>'+r.a+' – '+r.b+'</span></div>'}).join('');
- return card(title,'<div class="big"><span class="'+ca+'">'+la+' '+g.a.toFixed(1)+'%</span><span class="'+cb+'">'+lb+' '+g.b.toFixed(1)+'%</span></div>'+bar([[g.a/s,ca],[g.b/s,cb]])+
-  '<div class="sub">Average of the latest poll from each of '+g.pollsters+' pollsters ('+esc(g.since)+' to '+esc(g.latest)+'). Data: VoteHub.</div>'+(rec?'<details><summary>Latest polls</summary>'+rec+'</details>':''))}
-function bkCard(list,title){list=(list||[]).filter(function(b){return b.p>=0.01});if(!list.length)return '';var mx=Math.max.apply(null,list.map(function(b){return b.p}));
- return card(title,list.map(function(b){return '<div class="bk"><span>'+esc(b.b)+'</span>'+bar([[b.p/mx,'X']])+'<span>'+pc(b.p)+'</span></div>'}).join('')+'<div class="sub">Polymarket odds</div>')}
-function overview(){var h='';
- h+=ctl('house')+ctl('senate');
- h+=seatsCard('senate','Senate seats',{D:34,R:31},'Counts the 34 Dem/Ind and 31 Rep seats not up this year. Democrats need 51; Republicans need 50, because Vice President Vance breaks ties.');
- h+=seatsCard('house','House seats',null,'218 seats needed for a majority.');
- h+=seatsCard('governor','Governor races',null,'Leader = candidate with the highest market odds.');
- h+=pollCard('generic','Generic ballot (which party voters back for Congress)','Dem','Rep','D','R');
- h+=pollCard('approval','Trump job approval','Approve','Disapprove','A','N');
- var bal=((D.poly||{}).balance||[]).slice().sort(function(a,b){return b.p-a.p}).slice(0,4);h+=bkCard(bal,'Balance of power after the election');
- var se=(D.poly||{}).seats||{};h+=bkCard(se.senate,'Republican Senate seats after the election');h+=bkCard(se.house,'Republican House seats after the election');
- h+='<p class="note">Odds come from the prediction markets Polymarket and Kalshi. They are not official results. "Resolved" means the market has settled, which normally happens after news organisations call the race. Polls: VoteHub. Tap any race to open its market.</p>';
- $('#main').innerHTML=h}
-function raceHtml(r){var lab=(NAMES[r.st]||r.st)+(r.office==='house'?(r.d==='AL'?' at-large':' district '+(+r.d)):'');
- return '<a class="race" href="https://polymarket.com/event/'+encodeURIComponent(r.slug||'')+'" target="_blank" rel="noopener"><div class="rh"><b>'+esc(lab)+'</b><span class="tag">'+esc(r.st+(r.d?'-'+r.d:''))+'</span>'+(r.called?'<span class="ok">✓ Resolved</span>':'')+'</div>'+
-  r.cands.map(function(c){return '<div class="cand"><span>'+esc(c.n)+(c.pty?' <span class="'+P(c.pty)+'">('+esc(c.pty)+')</span>':'')+(c.won?' ✓':'')+'</span><b>'+pc(c.p)+'</b>'+bar([[c.p,P(c.pty)]])+'</div>'}).join('')+'</a>'}
-function list(){var rs=(((D.poly||{}).races||{})[TAB]||[]).slice(),q=Q.trim().toLowerCase();
- rs=rs.filter(function(r){if(q){var s=((NAMES[r.st]||'')+' '+r.st+(r.d?'-'+r.d:'')+' '+r.cands.map(function(c){return c.n}).join(' ')).toLowerCase();if(s.indexOf(q)<0)return false}
-  var top=r.cands[0].p;return FIL==='close'?(!r.called&&top<0.85):FIL==='res'?r.called:true});
- if(FIL==='close')rs.sort(function(a,b){return a.cands[0].p-b.cands[0].p});
- $('#list').innerHTML='<div class="sub" style="margin-bottom:8px">'+rs.length+' race'+(rs.length===1?'':'s')+'</div>'+(rs.map(raceHtml).join('')||'<div class="sub">No races match.</div>')}
-function races(){$('#main').innerHTML='<div class="chips">'+[['close','Close races'],['all','All'],['res','Resolved']].map(function(x){return '<button data-f="'+x[0]+'"'+(FIL===x[0]?' class="on"':'')+'>'+x[1]+'</button>'}).join('')+'</div>'+
- '<input type="search" id="q" placeholder="Search state or candidate" value="'+esc(Q)+'"><div id="list"></div>';
- $('#q').oninput=function(e){Q=e.target.value;list()};
- document.querySelectorAll('.chips button').forEach(function(b){b.onclick=function(){FIL=b.dataset.f;races()}});list()}
-function render(){if(!D)return;$('#upd').textContent='Updated '+ago(D.built);if(TAB==='overview')overview();else races()}
-async function load(force){$('#upd').textContent='Updating…';
- try{var r=await fetch('api/election'+(force?'?refresh=1':''));var j=await r.json();if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));D=j;last=Date.now();render()}
- catch(e){if(D){render();$('#upd').textContent='Offline · '+ago(D.built)}else{$('#main').innerHTML='<div class="err">'+esc(e.message||e)+'</div>';$('#upd').textContent=''}}}
-document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){TAB=b.dataset.t;document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('on',x===b)});window.scrollTo(0,0);render()}});
-$('#rf').onclick=function(){load(true)};
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&Date.now()-last>120000)load(true)});
-setInterval(function(){if(document.visibilityState==='visible')load(true)},300000);
-load(false);
 </script></body></html>

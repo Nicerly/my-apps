@@ -13,11 +13,13 @@ def put(app, rel, obj, k):
 def keep_old(app, rel):
     base = os.environ.get("PAGES_URL", "").rstrip("/")
     if not base: return False
+    fn = rel if rel.endswith(".json") else rel + ".enc"
     try:
-        with urllib.request.urlopen(f"{base}/{app}/data/{rel}.enc?t={int(time.time())}", timeout=30) as r: b = r.read()
-        p = os.path.join(SITE, app, "data", rel + ".enc"); os.makedirs(os.path.dirname(p), exist_ok=True); open(p, "wb").write(b); return True
+        with urllib.request.urlopen(f"{base}/{app}/data/{fn}?t={int(time.time())}", timeout=30) as r: b = r.read()
+        p = os.path.join(SITE, app, "data", fn); os.makedirs(os.path.dirname(p), exist_ok=True); open(p, "wb").write(b); return True
     except Exception as e:
         print("  could not keep previous", app, rel, repr(e)[:120]); return False
+
 def build_news():
     sys.path.insert(0, os.path.join(ROOT, "src", "news")); import news
     d = news.build()
@@ -30,8 +32,11 @@ def build_econ():
     return build_econ.run(put, key("ECON_KEY"), keep_old)
 def build_elec():
     sys.path.insert(0, os.path.join(ROOT, "src", "election")); import build_election
-    return build_election.run(put, key("ELECTION_KEY"), keep_old)
-APPS = {"news": (build_news, ["news"]), "econ": (build_econ, ["core"]), "election": (build_elec, ["election"])}
+    d = build_election.build(); d["built"] = int(time.time())
+    p = os.path.join(SITE, "election", "data", "election.json"); os.makedirs(os.path.dirname(p), exist_ok=True)
+    open(p, "w").write(json.dumps(d, separators=(",", ":")))
+    return build_election.summary(d)
+APPS = {"news": (build_news, ["news"]), "econ": (build_econ, ["core"]), "election": (build_elec, ["election.json"])}
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:  # each app in its own process (both have a module called news.py)
