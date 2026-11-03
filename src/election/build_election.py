@@ -44,6 +44,7 @@ RACE_SG = re.compile(r"^(.+?) (Senate|Governor) Election Winner\s*$")
 RACE_H = re.compile(r"^([A-Z]{2})-(\d\d|AL) House Election Winner")
 NAME_PARTY = {"Mary Peltola": "D", "Dan Osborn": "I"}
 def party_ctx(nm, mk, desc):
+    nm = re.sub(r"^(Sen\.|Rep\.|Gov\.|Senator|Governor)\s+", "", nm)
     p = party(nm)
     if p: return p
     if nm in NAME_PARTY: return NAME_PARTY[nm]
@@ -68,6 +69,11 @@ def race_from(e):
                       "won": bool(mk.get("closed") and p >= 0.99)})
     cands = [c for c in sorted(cands, key=lambda c: -c["p"]) if c["p"] >= 0.005][:4]
     if not cands: return None
+    lab = [c for c in cands[:2] if c["pty"]]
+    if st not in ("CA", "WA", "LA") and len(cands) >= 2 and len(lab) == 1 and lab[0]["pty"] in ("D", "R"):
+        for c in cands[:2]:
+            if not c["pty"] and not re.match(r"^(Other|Independent|Field|Any)", c["n"], re.I):
+                c["pty"] = "R" if lab[0]["pty"] == "D" else "D"; c["inf"] = 1
     top = cands[0]
     return {"office": office, "st": st, "d": dist, "slug": e.get("slug"), "vol": round(float(e.get("volume") or 0)),
             "cands": cands, "lead": top["pty"], "called": top["won"] or (bool(e.get("closed")) and top["p"] >= 0.99)}
