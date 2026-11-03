@@ -1,0 +1,164 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<script>
+(function(){
+var APP='election', LS='key_'+APP, qs=new URLSearchParams(location.search), K=qs.get('k')||'';
+try{ if(K) localStorage.setItem(LS,K); else K=localStorage.getItem(LS)||'' }catch(e){}
+window.__TUNNEL=1; window.__STATIC=1;
+function b64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+var keyP=null; function getKey(){return keyP||(keyP=crypto.subtle.importKey('raw',b64(K),{name:'AES-GCM'},false,['decrypt']))}
+var _fetch=window.fetch.bind(window), mem={}, BASE=new URL('data/',location.href);
+async function get(name){
+  var r=await _fetch(new URL(name+'.enc?t='+Date.now(),BASE).href,{cache:'no-store'});
+  if(!r.ok) throw new Error(r.status===404?'No data yet - try again in a few minutes':'Data HTTP '+r.status);
+  var u=new Uint8Array(await r.arrayBuffer()), pt;
+  try{ pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},await getKey(),u.slice(12)) }
+  catch(e){ throw new Error('Wrong or missing key - open the app from its private link') }
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function load(name,force){
+  var c=mem[name]; if(c&&!force&&Date.now()-c.t<60000) return c.p;
+  var p=get(name); mem[name]={t:Date.now(),p:p};
+  p.catch(function(){ if(mem[name]&&mem[name].p===p) delete mem[name] }); return p;
+}
+function J(o,s){return new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}})}
+function safe(s){return String(s).replace(/[^A-Za-z0-9]/g,function(c){return '_'+('0'+c.charCodeAt(0).toString(16).toUpperCase()).slice(-2)})}
+var ROUTES={
+ election: async function(p,q){ if(p==='/api/election') return load('election',q.has('refresh')); return J({error:'not found'},404) },
+ news: async function(p,q){ if(p==='/api/news') return load('news',q.has('refresh')); return J({error:'not found'},404) },
+ econ: async function(p,q,m,b){
+  var core=await load('core'), avail=core.avail||[];
+  if(p==='/api/watchlist'){
+    if(m==='POST'){ var l=[]; try{l=JSON.parse(b)}catch(e){} l=(l||[]).filter(function(s){return avail.indexOf(s)>=0}); try{localStorage.setItem('wl_'+APP,JSON.stringify(l))}catch(e){} return l }
+    try{ var s=JSON.parse(localStorage.getItem('wl_'+APP)||'null'); if(Array.isArray(s)&&s.length) return s.filter(function(x){return avail.indexOf(x)>=0}) }catch(e){}
+    return core.watchlist }
+  if(p==='/api/quotes') return (q.get('s')||'').split(',').filter(Boolean).map(function(s){return core.quotes[s]||{symbol:s,error:'Not in this app - ask the agent to add it'}});
+  if(p==='/api/chart'){ var c=await load('c/'+safe(q.get('s')||'')), r=c[q.get('range')||'1D']; if(!r) throw new Error('no chart data'); return r }
+  if(p==='/api/macro') return core.macro;
+  if(p==='/api/macro/series'){ var x=(core.series||{})[q.get('id')]; if(!x) throw new Error('no series data'); return x }
+  if(p==='/api/news') return core.news;
+  if(p==='/api/trending') return core.trending;
+  return J({error:'not found'},404) }
+};
+window.fetch=async function(u,o){
+  var url; try{url=new URL(typeof u==='string'?u:((u&&u.url)||String(u)),location.href)}catch(e){return _fetch(u,o)}
+  var i=url.pathname.indexOf('/api/');
+  if(url.origin!==location.origin||i<0) return _fetch(u,o);
+  if(!K) return J({error:'This app needs its private link.'},403);
+  try{ var v=await ROUTES[APP](url.pathname.slice(i),url.searchParams,((o&&o.method)||'GET').toUpperCase(),o&&o.body); return v instanceof Response?v:J(v) }
+  catch(e){ return J({error:String((e&&e.message)||e)},502) }
+};
+if(APP==='econ'){ var WS=function(){this.readyState=0}; WS.CONNECTING=0;WS.OPEN=1;WS.CLOSING=2;WS.CLOSED=3;
+  WS.prototype.send=WS.prototype.close=WS.prototype.addEventListener=WS.prototype.removeEventListener=function(){}; window.WebSocket=WS }
+if(!K) document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML='<div style="padding:40px;font:16px system-ui;color:#d7dde8;background:#0b0e14;min-height:100vh">This app needs its private link. Open it once from the link the agent gave you.</div>'});
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Midterms 2026</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Midterms"><meta name="theme-color" content="#0b0e14">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#0b0e14;--card:#121722;--line:#1f2633;--fg:#e6eaf2;--mut:#8b95a7;--acc:#5aa9ff;--D:#3b82f6;--R:#ef4444;--I:#a78bfa;--U:#6b7280;--A:#34d399;--N:#f59e0b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:rgba(11,14,20,.95);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:calc(env(safe-area-inset-top) + 10px) 14px 0;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:20px;display:flex;align-items:center;gap:8px}
+#upd{color:var(--mut);font-size:12px;font-weight:400;margin-left:auto}
+#rf{background:none;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:4px 9px;font-size:15px}
+nav{display:flex;gap:2px;margin-top:6px}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:9px 0;font-size:14px;border-bottom:2px solid transparent}
+nav button.on{color:var(--fg);border-color:var(--acc)}
+main{padding:12px 12px calc(env(safe-area-inset-bottom) + 24px)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{margin:0 0 8px;font-size:14px;color:var(--mut);font-weight:600}
+.big{display:flex;justify-content:space-between;font-weight:700;font-size:21px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#222a38;margin:8px 0}
+.bar i{display:block;height:100%}
+.D{color:var(--D)}.R{color:var(--R)}.I{color:var(--I)}.U{color:var(--U)}.A{color:var(--A)}.N{color:var(--N)}
+.bD{background:var(--D)}.bR{background:var(--R)}.bI{background:var(--I)}.bU{background:var(--U)}.bA{background:var(--A)}.bN{background:var(--N)}.bX{background:var(--acc)}
+.sub{color:var(--mut);font-size:12.5px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:14px}
+.chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.chips button{background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:16px;padding:6px 12px;font-size:13px}
+.chips button.on{background:var(--acc);color:#000;border-color:var(--acc)}
+input[type=search]{width:100%;background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:9px 12px;font-size:16px;margin-bottom:10px}
+.race{display:block;color:inherit;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.rh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.ok{margin-left:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:#1f3a2a;color:#7ee2a8}
+.cand{display:grid;grid-template-columns:1fr 50px;gap:0 8px;align-items:center;font-size:14px}
+.cand b{text-align:right}
+.cand .bar{grid-column:1/3;height:6px;margin:2px 0 6px}
+.bk{display:grid;grid-template-columns:110px 1fr 44px;gap:8px;align-items:center;font-size:13px;padding:2px 0}
+.bk .bar{margin:0;height:8px}.bk span:last-child{text-align:right}
+.err{padding:30px 10px;color:#ffb4b4;text-align:center}
+.note{color:var(--mut);font-size:12px;line-height:1.5;padding:0 4px}
+details summary{color:var(--acc);font-size:13px;margin-top:6px}
+.pl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);padding:2px 0}
+</style></head><body>
+<header><h1>🗳️ Midterms 2026 <span id="upd"></span><button id="rf" aria-label="Refresh">↻</button></h1>
+<nav><button data-t="overview" class="on">Overview</button><button data-t="senate">Senate</button><button data-t="house">House</button><button data-t="governor">Governors</button></nav></header>
+<main id="main"><div class="sub" style="padding:30px;text-align:center">Loading…</div></main>
+<script>
+var NAMES={"AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"};
+var D=null,TAB='overview',FIL='close',Q='',last=0;
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pc(p){if(p==null||isNaN(p))return '–';var x=p*100;return x>0&&x<1?'<1%':(x<100&&x>99?'>99%':Math.round(x)+'%')}
+function P(c){return c==='D'||c==='R'||c==='I'?c:'U'}
+function bar(parts){return '<div class="bar">'+parts.map(function(x){return '<i class="b'+x[1]+'" style="width:'+Math.max(0,x[0]*100).toFixed(1)+'%"></i>'}).join('')+'</div>'}
+function card(t,h){return '<div class="card"><h2>'+esc(t)+'</h2>'+h+'</div>'}
+function ago(t){var m=Math.round((Date.now()/1000-t)/60);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago'}
+function ctl(ch){var a=[],p=((D.poly||{}).control||{})[ch],k=(D.kalshi||{})[ch];
+ [['Polymarket',p],['Kalshi',k]].forEach(function(x){var o=x[1];if(o&&o.D!=null&&o.R!=null&&o.D+o.R>0)a.push([x[0],o.D/(o.D+o.R)])});
+ if(!a.length)return '';var d=a.reduce(function(s,x){return s+x[1]},0)/a.length;
+ return card('Chance of winning the '+(ch==='house'?'House':'Senate'),'<div class="big"><span class="D">Dem '+pc(d)+'</span><span class="R">Rep '+pc(1-d)+'</span></div>'+bar([[d,'D'],[1-d,'R']])+
+  '<div class="sub">Average of '+a.length+' prediction market'+(a.length>1?'s':'')+': '+a.map(function(x){return x[0]+' Dem '+pc(x[1])}).join(' · ')+'</div>')}
+function tally(office){var rs=((D.poly||{}).races||{})[office]||[],t={res:{D:0,R:0,I:0,U:0},lead:{D:0,R:0,I:0,U:0},n:rs.length};
+ rs.forEach(function(r){(r.called?t.res:t.lead)[P(r.lead)]++});return t}
+function tl(o){return ['D','R','I','U'].filter(function(k){return o[k]}).map(function(k){return '<span class="'+k+'">'+({D:'Dem',R:'Rep',I:'Ind',U:'Other/unlabeled'}[k])+' '+o[k]+'</span>'}).join(' · ')||'<span class="sub">none yet</span>'}
+function seatsCard(office,title,hold,need){var t=tally(office);if(!t.n)return '';
+ var h='<div class="row"><span>Resolved</span><span>'+tl(t.res)+'</span></div><div class="row"><span>Leading in the odds</span><span>'+tl(t.lead)+'</span></div>';
+ var hd=hold?hold.D:0,hr=hold?hold.R:0,tot=(hold?hd+hr:0)+t.n,d=hd+t.res.D+t.lead.D,r=hr+t.res.R+t.lead.R,o=tot-d-r;
+ h+='<div class="row" style="margin-top:6px"><b>If every leader wins</b><b><span class="D">D '+d+'</span> – <span class="R">R '+r+'</span>'+(o?' <span class="U">· '+o+' other</span>':'')+'</b></div>'+bar([[d/tot,'D'],[o/tot,'U'],[r/tot,'R']]);
+ h+='<div class="sub">'+need+'</div>';return card(title,h)}
+function pollCard(key,title,la,lb,ca,cb){var g=(D.polls||{})[key];if(!g)return '';var s=g.a+g.b;
+ var rec=(g.recent||[]).map(function(r){return '<div class="pl"><span>'+esc(r.who)+' · '+esc(r.end)+'</span><span>'+r.a+' – '+r.b+'</span></div>'}).join('');
+ return card(title,'<div class="big"><span class="'+ca+'">'+la+' '+g.a.toFixed(1)+'%</span><span class="'+cb+'">'+lb+' '+g.b.toFixed(1)+'%</span></div>'+bar([[g.a/s,ca],[g.b/s,cb]])+
+  '<div class="sub">Average of the latest poll from each of '+g.pollsters+' pollsters ('+esc(g.since)+' to '+esc(g.latest)+'). Data: VoteHub.</div>'+(rec?'<details><summary>Latest polls</summary>'+rec+'</details>':''))}
+function bkCard(list,title){list=(list||[]).filter(function(b){return b.p>=0.01});if(!list.length)return '';var mx=Math.max.apply(null,list.map(function(b){return b.p}));
+ return card(title,list.map(function(b){return '<div class="bk"><span>'+esc(b.b)+'</span>'+bar([[b.p/mx,'X']])+'<span>'+pc(b.p)+'</span></div>'}).join('')+'<div class="sub">Polymarket odds</div>')}
+function overview(){var h='';
+ h+=ctl('house')+ctl('senate');
+ h+=seatsCard('senate','Senate seats',{D:34,R:31},'Counts the 34 Dem/Ind and 31 Rep seats not up this year. Democrats need 51; Republicans need 50, because Vice President Vance breaks ties.');
+ h+=seatsCard('house','House seats',null,'218 seats needed for a majority.');
+ h+=seatsCard('governor','Governor races',null,'Leader = candidate with the highest market odds.');
+ h+=pollCard('generic','Generic ballot (which party voters back for Congress)','Dem','Rep','D','R');
+ h+=pollCard('approval','Trump job approval','Approve','Disapprove','A','N');
+ var bal=((D.poly||{}).balance||[]).slice().sort(function(a,b){return b.p-a.p}).slice(0,4);h+=bkCard(bal,'Balance of power after the election');
+ var se=(D.poly||{}).seats||{};h+=bkCard(se.senate,'Republican Senate seats after the election');h+=bkCard(se.house,'Republican House seats after the election');
+ h+='<p class="note">Odds come from the prediction markets Polymarket and Kalshi. They are not official results. "Resolved" means the market has settled, which normally happens after news organisations call the race. Polls: VoteHub. Tap any race to open its market.</p>';
+ $('#main').innerHTML=h}
+function raceHtml(r){var lab=(NAMES[r.st]||r.st)+(r.office==='house'?(r.d==='AL'?' at-large':' district '+(+r.d)):'');
+ return '<a class="race" href="https://polymarket.com/event/'+encodeURIComponent(r.slug||'')+'" target="_blank" rel="noopener"><div class="rh"><b>'+esc(lab)+'</b><span class="tag">'+esc(r.st+(r.d?'-'+r.d:''))+'</span>'+(r.called?'<span class="ok">✓ Resolved</span>':'')+'</div>'+
+  r.cands.map(function(c){return '<div class="cand"><span>'+esc(c.n)+(c.pty?' <span class="'+P(c.pty)+'">('+esc(c.pty)+')</span>':'')+(c.won?' ✓':'')+'</span><b>'+pc(c.p)+'</b>'+bar([[c.p,P(c.pty)]])+'</div>'}).join('')+'</a>'}
+function list(){var rs=(((D.poly||{}).races||{})[TAB]||[]).slice(),q=Q.trim().toLowerCase();
+ rs=rs.filter(function(r){if(q){var s=((NAMES[r.st]||'')+' '+r.st+(r.d?'-'+r.d:'')+' '+r.cands.map(function(c){return c.n}).join(' ')).toLowerCase();if(s.indexOf(q)<0)return false}
+  var top=r.cands[0].p;return FIL==='close'?(!r.called&&top<0.85):FIL==='res'?r.called:true});
+ if(FIL==='close')rs.sort(function(a,b){return a.cands[0].p-b.cands[0].p});
+ $('#list').innerHTML='<div class="sub" style="margin-bottom:8px">'+rs.length+' race'+(rs.length===1?'':'s')+'</div>'+(rs.map(raceHtml).join('')||'<div class="sub">No races match.</div>')}
+function races(){$('#main').innerHTML='<div class="chips">'+[['close','Close races'],['all','All'],['res','Resolved']].map(function(x){return '<button data-f="'+x[0]+'"'+(FIL===x[0]?' class="on"':'')+'>'+x[1]+'</button>'}).join('')+'</div>'+
+ '<input type="search" id="q" placeholder="Search state or candidate" value="'+esc(Q)+'"><div id="list"></div>';
+ $('#q').oninput=function(e){Q=e.target.value;list()};
+ document.querySelectorAll('.chips button').forEach(function(b){b.onclick=function(){FIL=b.dataset.f;races()}});list()}
+function render(){if(!D)return;$('#upd').textContent='Updated '+ago(D.built);if(TAB==='overview')overview();else races()}
+async function load(force){$('#upd').textContent='Updating…';
+ try{var r=await fetch('api/election'+(force?'?refresh=1':''));var j=await r.json();if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));D=j;last=Date.now();render()}
+ catch(e){if(D){render();$('#upd').textContent='Offline · '+ago(D.built)}else{$('#main').innerHTML='<div class="err">'+esc(e.message||e)+'</div>';$('#upd').textContent=''}}}
+document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){TAB=b.dataset.t;document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('on',x===b)});window.scrollTo(0,0);render()}});
+$('#rf').onclick=function(){load(true)};
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&Date.now()-last>120000)load(true)});
+setInterval(function(){if(document.visibilityState==='visible')load(true)},300000);
+load(false);
+</script></body></html>

@@ -31,6 +31,7 @@ jobs:
         env:
           NEWS_KEY: ${{ secrets.NEWS_KEY }}
           ECON_KEY: ${{ secrets.ECON_KEY }}
+          ELECTION_KEY: ${{ secrets.ELECTION_KEY }}
           PAGES_URL: https://nicerly.github.io/my-apps
       - uses: actions/upload-pages-artifact@v3
         with:
