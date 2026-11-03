@@ -42,7 +42,7 @@ def poly_events():
     return list(out.values())
 RACE_SG = re.compile(r"^(.+?) (Senate|Governor) Election Winner\s*$")
 RACE_H = re.compile(r"^([A-Z]{2})-(\d\d|AL) House Election Winner")
-NAME_PARTY = {"Mary Peltola": "D", "Dan Osborn": "I"}
+NAME_PARTY = {"Mary Peltola": "D", "Dan Osborn": "I", "Jonathan Kreiss-Tomkins": "D", "Bernadette Wilson": "R", "Xavier Becerra": "D", "Doris Matsui": "D", "Mai Vang": "D", "Scott Wiener": "D", "Connie Chan": "D", "Sydney Kamlager-Dove": "D", "Ken Calvert": "R", "Young Kim": "R"}
 def party_ctx(nm, mk, desc):
     nm = re.sub(r"^(Sen\.|Rep\.|Gov\.|Senator|Governor)\s+", "", nm)
     p = party(nm)
@@ -65,7 +65,7 @@ def race_from(e):
     for mk in e.get("markets") or []:
         p = price(mk); nm = (mk.get("groupItemTitle") or mk.get("question") or "").strip()
         if p is None or not nm or re.match(r"^((Person|Party|Option|Candidate|Player) [A-Z]|[A-Z]|Other|Another .*|Someone else)$", nm): continue
-        cands.append({"n": re.sub(r"\s*\((D|R|I|L|G)\)\s*$", "", nm), "p": round(p, 4), "pty": party_ctx(nm, mk, desc),
+        cands.append({"n": re.sub(r"^(Sen\.|Rep\.|Gov\.|Senator|Governor)\s+", "", re.sub(r"\s*\((D|R|I|L|G)\)\s*$", "", nm)), "p": round(p, 4), "pty": party_ctx(nm, mk, desc),
                       "won": bool(mk.get("closed") and p >= 0.99)})
     cands = [c for c in sorted(cands, key=lambda c: -c["p"]) if c["p"] >= 0.005][:4]
     if not cands: return None
