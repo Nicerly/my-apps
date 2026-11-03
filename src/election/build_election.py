@@ -63,7 +63,7 @@ def race_from(e):
     cands = []
     for mk in e.get("markets") or []:
         p = price(mk); nm = (mk.get("groupItemTitle") or mk.get("question") or "").strip()
-        if p is None or not nm or re.match(r"^(Person|Party|Option) [A-Z]$", nm): continue
+        if p is None or not nm or re.match(r"^((Person|Party|Option|Candidate|Player) [A-Z]|[A-Z]|Other|Another .*|Someone else)$", nm): continue
         cands.append({"n": re.sub(r"\s*\((D|R|I|L|G)\)\s*$", "", nm), "p": round(p, 4), "pty": party_ctx(nm, mk, desc),
                       "won": bool(mk.get("closed") and p >= 0.99)})
     cands = [c for c in sorted(cands, key=lambda c: -c["p"]) if c["p"] >= 0.005][:4]
@@ -83,7 +83,7 @@ def buckets(e):
     out = []
     for mk in e.get("markets") or []:
         p = price(mk)
-        if p is None or re.match(r"^(Person|Party|Option) [A-Z]$", mk.get("groupItemTitle") or ""): continue
+        if p is None or re.match(r"^((Person|Party|Option|Candidate|Player) [A-Z]|[A-Z]|Other|Another .*|Someone else)$", mk.get("groupItemTitle") or ""): continue
         try: th = float(mk.get("groupItemThreshold") or 0)
         except Exception: th = 0
         out.append((th, {"b": mk.get("groupItemTitle"), "p": round(p, 4)}))
