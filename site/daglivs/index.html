@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="DaglivsMat">
 <meta name="theme-color" content="#00a142">
 <title>DaglivsMat</title>
-<style>/*dm7*//*dm2*/
+<style>/*dm8*//*dm5*//*dm7*//*dm2*/
 :root{--g:#00a142;--gd:#007a32;--bg:#f2f5f2;--card:#fff;--line:#e2e7e2;--fg:#1b1f1b;--mut:#687068}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
@@ -63,7 +63,7 @@ main{padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 40px)}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const uid=()=>Math.random().toString(36).slice(2,9);
-const FINE=["Frukt & grönt","Bröd & bageri","Kött & fågel","Chark & pålägg","Fisk & skaldjur","Mejeri & ägg","Ost","Vegetariskt","Färdigmat","Skafferi","Kryddor & bakning","Fryst","Dryck","Godis & snacks","Barn","Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak","Upp"];const AREAS=["Upp", "Mejeri", "Veg", "Bak", "Fram"];const DEPT={"Skafferi": "Bak", "Kryddor & bakning": "Bak", "Dryck": "Upp", "Hushåll & städ": "Upp", "Hälsa & hygien": "Upp", "Barn": "Upp", "Djur": "Upp", "Hem & fritid": "Upp", "Övrigt": "Upp", "Mejeri & ägg": "Mejeri", "Ost": "Mejeri", "Frukt & grönt": "Veg", "Vegetariskt": "Veg", "Kött & fågel": "Bak", "Chark & pålägg": "Bak", "Fisk & skaldjur": "Bak", "Färdigmat": "Bak", "Fryst": "Bak", "Bröd & bageri": "Bak", "Godis & snacks": "Fram", "Kiosk & tobak": "Fram", "Upp": "Upp", "Mejeri": "Mejeri", "Veg": "Veg", "Bak": "Bak", "Fram": "Fram"};const OLDD={"Frukt, grönt & bröd": "Veg", "Kött, fisk & chark": "Bak", "Mejeri, ost & fryst": "Mejeri", "Skafferi, dryck & snacks": "Upp", "Hem & hygien": "Upp"};
+const FINE=["Frukt & grönt","Bröd & bageri","Kött & fågel","Chark & pålägg","Fisk & skaldjur","Mejeri & ägg","Ost","Vegetariskt","Färdigmat","Skafferi","Kryddor & bakning","Fryst","Dryck","Godis & snacks","Barn","Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak","Upp"];const AREAS=["Upp", "Mejeri", "Veg", "Bak", "Fram"];const DEPT={"Skafferi": "Bak", "Kryddor & bakning": "Bak", "Dryck": "Upp", "Hushåll & städ": "Upp", "Hälsa & hygien": "Upp", "Barn": "Upp", "Djur": "Upp", "Hem & fritid": "Upp", "Övrigt": "Upp", "Mejeri & ägg": "Mejeri", "Ost": "Mejeri", "Frukt & grönt": "Veg", "Vegetariskt": "Veg", "Kött & fågel": "Bak", "Chark & pålägg": "Bak", "Fisk & skaldjur": "Bak", "Färdigmat": "Bak", "Fryst": "Fram", "Bröd & bageri": "Bak", "Godis & snacks": "Fram", "Kiosk & tobak": "Fram", "Upp": "Upp", "Mejeri": "Mejeri", "Veg": "Veg", "Bak": "Bak", "Fram": "Fram"};const OLDD={"Frukt, grönt & bröd": "Veg", "Kött, fisk & chark": "Bak", "Mejeri, ost & fryst": "Mejeri", "Skafferi, dryck & snacks": "Upp", "Hem & hygien": "Upp"};
 function deptOf(c){const ch=chainNames(c),top=ch[0]||"",mid=ch[1]||"";if(/godis|snacks/i.test(top)){if(/chips|snacks|popcorn|nötter|ostbågar|dipp|salt/i.test(mid))return "Upp";return "Fram"}return DEPT[fineAreaOf(c)]||"Upp"}
 function areaOf(c){const m=S&&S.cm;if(m&&m[c])return m[c];return deptOf(c)}
 function reDept(){const B=new Map(P.map(p=>[p.id,p]));for(const l of S.lists)for(const it of l.items){const p=B.get(it.k);if(p&&!it.c)it.c=p.c;if(!it.mv&&it.c)it.a=areaOf(it.c)}save()}
