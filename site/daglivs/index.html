@@ -1,0 +1,153 @@
+<!doctype html><html lang="sv"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DaglivsMat">
+<meta name="theme-color" content="#00a142">
+<title>DaglivsMat</title>
+<style>/*dm2*/
+:root{--g:#00a142;--gd:#007a32;--bg:#f2f5f2;--card:#fff;--line:#e2e7e2;--fg:#1b1f1b;--mut:#687068}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+header{position:sticky;top:0;z-index:10;background:var(--g);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+@media (display-mode: standalone){header{padding-top:calc(max(env(safe-area-inset-top,0px),54px) + 16px)}}
+.top{display:flex;align-items:baseline;gap:10px;min-width:0}
+h1{font-size:21px;margin:0;flex:none}
+#st{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#lists{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+#lists::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:0;border-radius:16px;padding:6px 12px;font-size:14px;background:rgba(255,255,255,.2);color:#fff;white-space:nowrap}
+.chip.on{background:#fff;color:var(--gd);font-weight:600}
+#sbar{position:relative;margin-top:10px}
+#q{width:100%;font-size:16px;padding:10px 38px 10px 12px;border-radius:12px;border:0;outline:none;-webkit-appearance:none}
+#qx{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:22px;color:#888;display:none;width:34px;height:34px}
+main{padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 40px)}
+.sec{margin-bottom:10px}
+.sh{font-size:12px;font-weight:700;color:var(--gd);text-transform:uppercase;letter-spacing:.04em;margin:10px 4px 4px;display:flex;justify-content:space-between}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--line);overflow:hidden}
+.row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-top:1px solid var(--line);min-height:52px}
+.row:first-child{border-top:0}
+.ck{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid #b5bfb5;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.done .ck{background:var(--g);border-color:var(--g)}
+.th{flex:none;width:36px;height:36px;object-fit:contain;border-radius:6px;background:#fff}
+.tx{flex:1 1 0;min-width:0}
+.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.sub{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.done .nm{text-decoration:line-through;color:var(--mut)}
+.done .th{opacity:.35}
+.qt{flex:none;display:flex;align-items:center;gap:2px}
+.qb{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#f6f8f6;font-size:18px;line-height:1;color:var(--fg);padding:0}
+.qn{min-width:20px;text-align:center;font-weight:600;font-size:15px}
+.rm{flex:none;border:0;background:none;color:#c33;font-size:22px;width:26px;padding:0}
+.add{flex:none;border:0;background:var(--g);color:#fff;border-radius:50%;width:34px;height:34px;font-size:20px;line-height:1;padding:0;font-weight:600}
+.add.in{background:#cdebd8;color:var(--gd);font-size:15px}
+.empty{text-align:center;color:var(--mut);padding:36px 20px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 2px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-size:14px;color:var(--fg)}
+.tot{margin:6px 4px;color:var(--mut);font-size:13px}
+.ord .row{min-height:46px}
+.foot{color:var(--mut);font-size:11px;text-align:center;margin:18px 10px 0}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:rgba(20,32,20,.92);color:#fff;padding:8px 14px;border-radius:18px;font-size:14px;max-width:86vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+</style></head><body>
+<header><div class="top"><h1>DaglivsMat</h1><span id="st">Coop Daglivs · Fridhemsplan</span></div>
+<div id="lists"></div>
+<div id="sbar"><input id="q" type="text" placeholder="Sök bland Coops varor…" autocomplete="off" autocorrect="off" enterkeyhint="search"><button id="qx" aria-label="Rensa sökningen">×</button></div></header>
+<main></main><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const AREAS=["Frukt & grönt","Bröd & bageri","Kött & fågel","Chark & pålägg","Fisk & skaldjur","Mejeri & ägg","Ost","Vegetariskt","Färdigmat","Skafferi","Kryddor & bakning","Fryst","Dryck","Godis & snacks","Barn","Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak","Övrigt"];
+const TOPM={"Frukt & Grönsaker":"Frukt & grönt","Bröd & Bageri":"Bröd & bageri","Kött, Fågel & Chark":"Kött & fågel","Fisk & Skaldjur":"Fisk & skaldjur","Mejeri & Ägg":"Mejeri & ägg","Ost":"Ost","Vegetariskt":"Vegetariskt","Färdigmat & Mellanmål":"Färdigmat","Delikatesser":"Ost","Skafferi":"Skafferi","Kryddor & Smaksättare":"Kryddor & bakning","Frys":"Fryst","Dryck":"Dryck","Godis, Glass & Snacks":"Godis & snacks","Barn":"Barn","Skönhet & Hygien":"Hälsa & hygien","Apotek, hälsa & tillskott":"Hälsa & hygien","Hushåll":"Hushåll & städ","Djurmat & Tillbehör":"Djur","Fritid":"Hem & fritid","Hem & inredning":"Hem & fritid","Kiosk & Tidningar":"Kiosk & tobak"};
+const MIDM={"Kött, Fågel & Chark>Pålägg & Deli":"Chark & pålägg","Kött, Fågel & Chark>Korv":"Chark & pålägg","Kött, Fågel & Chark>Chark":"Chark & pålägg","Delikatesser>Delikatesschark":"Chark & pålägg","Godis, Glass & Snacks>Glass":"Fryst","Vegetariskt>Fryst":"Fryst","Skafferi>Bakning":"Kryddor & bakning"};
+const STRONG=[[/fryst|frys/i,"Fryst"],[/barn|bebis/i,"Barn"],[/djur/i,"Djur"],[/hälsa|skönhet|hygien|apotek|kropp|rak|lödder|tvål|schampo/i,"Hälsa & hygien"],[/städ|tvätt|hushåll|papper|disk|rengör/i,"Hushåll & städ"],[/tobak|snus|kiosk|tidning/i,"Kiosk & tobak"],[/hem &|fritid|leksak|blomm|inredning/i,"Hem & fritid"]];
+const WEAK=[[/frukt|grönt|grönsak/i,"Frukt & grönt"],[/bröd|bageri|kakor|bullar/i,"Bröd & bageri"],[/chark|pålägg|korv/i,"Chark & pålägg"],[/kött|fågel|kyckling/i,"Kött & fågel"],[/fisk|skaldjur/i,"Fisk & skaldjur"],[/mejeri|ägg|mjölk/i,"Mejeri & ägg"],[/^ost/i,"Ost"],[/vegetar|vego|växtbas/i,"Vegetariskt"],[/färdigmat|matlåd/i,"Färdigmat"],[/kryddor|bakning|smaksätt/i,"Kryddor & bakning"],[/skafferi|konserv|pasta/i,"Skafferi"],[/dryck|kaffe|juice/i,"Dryck"],[/godis|snacks|choklad|glass/i,"Godis & snacks"]];
+let P=[],CATS={},IB="",CATERR=false,FOOT="",RES=[],view="list",Q="";
+const AC={};
+function chainNames(cid){const out=[];let c=cid,g=0;while(c&&CATS[c]&&g++<8){out.unshift(CATS[c][0]);c=CATS[c][1]}return out}
+function areaOf(cid){if(cid in AC)return AC[cid];const ch=chainNames(cid),top=ch[0]||"",mid=ch[1]||"",all=ch.join(" ");
+ let a=MIDM[top+">"+mid]||TOPM[top]||null;
+ if(!a)for(const[r,n]of STRONG)if(r.test(all)){a=n;break}
+ if(!a)for(const[r,n]of WEAK)if(r.test(all)){a=n;break}
+ return AC[cid]=a||"Övrigt"}
+const LS="daglivsmat.v1";
+let S;try{S=JSON.parse(localStorage.getItem(LS))||{}}catch(e){S={}}
+if(!Array.isArray(S.lists)||!S.lists.length)S.lists=[{id:uid(),name:"Handla",items:[]}];
+if(!S.lists.find(l=>l.id===S.cur))S.cur=S.lists[0].id;
+if(!Array.isArray(S.order))S.order=AREAS.slice();
+S.order=S.order.filter(a=>AREAS.includes(a));for(const a of AREAS)if(!S.order.includes(a))S.order.push(a);
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast("Kunde inte spara listan")}};
+const cur=()=>S.lists.find(l=>l.id===S.cur);
+const fmtP=x=>x==null?"":Number(x).toFixed(2).replace(".",",")+" kr";
+function imgU(i){if(!i)return"";if(/^https?:/.test(i))return i.replace(/^http:/,"https:");return IB?IB+"w_96,h_96,c_pad,b_white,f_auto,q_auto/"+i:""}
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),1400)}
+function renderChips(){$("#lists").innerHTML=S.lists.map(l=>{const n=l.items.filter(i=>!i.d).length;return `<button class="chip${l.id===S.cur?" on":""}" data-act="sel" data-id="${l.id}">${esc(l.name)}${n?` <span style="opacity:.7">${n}</span>`:""}</button>`}).join("")+`<button class="chip" data-act="newlist">+ Ny lista</button>`}
+function actions(){return `<div class="bar"><button class="btn" data-act="ren">Byt namn</button><button class="btn" data-act="clr">Rensa avbockade</button><button class="btn" data-act="ord">Ordna områden</button><button class="btn" data-act="del" style="color:#c33">Ta bort lista</button></div><div class="foot">${esc(FOOT)}</div>`}
+function itemRow(it,i){const sub=[it.b,it.s,it.p!=null?fmtP(it.p):""].filter(Boolean).join(" · ");
+ return `<div class="row${it.d?" done":""}"><div class="ck" data-act="tog" data-i="${i}">${it.d?"✓":""}</div>${it.img?`<img class="th" loading="lazy" src="${esc(imgU(it.img))}" alt="">`:""}<div class="tx" data-act="tog" data-i="${i}"><div class="nm">${esc(it.n)}</div>${sub?`<div class="sub">${esc(sub)}</div>`:""}</div><div class="qt"><button class="qb" data-act="dec" data-i="${i}" aria-label="Minska">−</button><span class="qn">${it.q}</span><button class="qb" data-act="inc" data-i="${i}" aria-label="Öka">+</button></div><button class="rm" data-act="rm" data-i="${i}" aria-label="Ta bort">×</button></div>`}
+function renderList(){const L=cur();if(!L.items.length)return `<div class="empty"><b>${esc(L.name)}</b> är tom.<br>Sök efter varor ovan för att lägga till dem.</div>`+actions();
+ const by={};L.items.forEach((it,i)=>{const a=S.order.includes(it.a)?it.a:"Övrigt";(by[a]||(by[a]=[])).push([it,i])});
+ let h="";for(const a of S.order){const g=by[a];if(!g)continue;g.sort((x,y)=>x[0].d-y[0].d);const left=g.filter(x=>!x[0].d).length;
+  h+=`<div class="sec"><div class="sh"><span>${esc(a)}</span><span>${left?left+" kvar":"✓ klart"}</span></div><div class="card">`+g.map(([it,i])=>itemRow(it,i)).join("")+`</div></div>`}
+ const tot=L.items.reduce((s,i)=>s+(i.p||0)*i.q,0),left=L.items.filter(i=>!i.d).length;
+ return `<div class="tot">${left} av ${L.items.length} varor kvar${tot?" · ca "+fmtP(tot):""}</div>`+h+actions()}
+const WC={};const WS=/[^a-zåäöéüæø0-9%]+/;
+function catWords(cid){if(cid in WC)return WC[cid];return WC[cid]=chainNames(cid).join(" ").toLowerCase().split(WS).filter(Boolean)}
+const NONFOOD=new Set(["Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak"]);
+function search(q){const t=q.toLowerCase().split(/\s+/).filter(Boolean);if(!t.length)return[];const t0=t[0],out=[];
+ for(const p of P){let ok=true;for(const x of t)if(!p.k.includes(x)){ok=false;break}if(!ok)continue;
+  const w=p.w||(p.w=p.n.toLowerCase().split(WS).filter(Boolean));
+  let lv=3;for(let i=0;i<w.length;i++){const x=w[i];const l=x===t0?(i===0?0:0.4):x.endsWith(t0)?1:x.startsWith(t0)?2:3;if(l<lv)lv=l}
+  const cm=catWords(p.c).some(x=>x===t0||(t0.length>=4&&x.endsWith(t0)));
+  const s=lv+(cm?-1.5:0)+(!cm&&NONFOOD.has(areaOf(p.c))?0.8:0);
+  out.push([s*1000+Math.min(p.n.length,999),p])}
+ out.sort((a,b)=>a[0]-b[0]);return out.slice(0,60).map(x=>x[1])}
+function renderRes(){const L=cur();if(!P.length&&!CATERR)return `<div class="empty">Laddar Coops sortiment…</div>`;
+ RES=search(Q);const inL=k=>L.items.find(i=>i.k===k);
+ let h=`<div class="tot">${CATERR?"Coops sortiment kunde inte laddas":RES.length?(RES.length>=60?"Visar de 60 bästa träffarna":RES.length+" träffar"):"Inga träffar i Coops sortiment"} · läggs i <b>${esc(L.name)}</b></div><div class="card">`;
+ h+=RES.map((p,j)=>{const x=inL(p.id);const sub=[p.b,p.s,p.p!=null?fmtP(p.p):""].filter(Boolean).join(" · ");
+  return `<div class="row" data-act="add" data-j="${j}">${p.img?`<img class="th" loading="lazy" src="${esc(imgU(p.img))}" alt="">`:`<div class="th"></div>`}<div class="tx"><div class="nm">${esc(p.n)}</div><div class="sub">${esc(sub)}</div><div class="sub">${esc(areaOf(p.c))}</div></div><button class="add${x?" in":""}" data-act="add" data-j="${j}" aria-label="Lägg till">${x?"✓"+x.q:"+"}</button></div>`}).join("");
+ h+=`<div class="row" data-act="custom"><div class="th" style="display:flex;align-items:center;justify-content:center;font-size:20px;background:none">✎</div><div class="tx"><div class="nm">Lägg till ”${esc(Q.trim())}”</div><div class="sub">som egen vara</div></div><button class="add" data-act="custom" aria-label="Lägg till egen vara">+</button></div></div>`;return h}
+function renderOrd(){return `<div class="tot">Ordna områdena i den ordning du går genom butiken.</div><div class="card ord">`+S.order.map((a,i)=>`<div class="row"><div class="tx"><div class="nm">${i+1}. ${esc(a)}</div></div><button class="qb" data-act="up" data-i="${i}" aria-label="Flytta upp">↑</button><button class="qb" data-act="dn" data-i="${i}" aria-label="Flytta ner">↓</button></div>`).join("")+`</div><div class="bar"><button class="btn" data-act="ordok" style="background:var(--g);color:#fff;border-color:var(--g)">Klar</button><button class="btn" data-act="ordreset">Återställ</button></div>`}
+function render(){renderChips();$("#qx").style.display=Q?"block":"none";$("main").innerHTML=Q.trim()?renderRes():view==="ord"?renderOrd():renderList()}
+function addP(p){if(!p)return;const L=cur();const x=L.items.find(i=>i.k===p.id);if(x){x.q++;x.d=false}else L.items.push({k:p.id,n:p.n,b:p.b,s:p.s,p:p.p,img:imgU(p.img),a:areaOf(p.c),q:1,d:false});save();toast("Lagt till: "+p.n);render()}
+function addCustom(){const n=Q.trim();if(!n)return;const L=cur();L.items.push({k:"x:"+uid(),n:n.slice(0,60),b:"",s:"",p:null,img:"",a:RES[0]?areaOf(RES[0].c):"Övrigt",q:1,d:false});save();toast("Lagt till: "+n);$("#q").value="";Q="";render()}
+document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const act=el.dataset.act,i=+el.dataset.i,L=cur();
+ switch(act){case"sel":S.cur=el.dataset.id;view="list";break;
+ case"newlist":{const n=prompt("Namn på den nya listan:","Ny lista");if(!n||!n.trim())return;const l={id:uid(),name:n.trim().slice(0,40),items:[]};S.lists.push(l);S.cur=l.id;view="list";break}
+ case"ren":{const n=prompt("Nytt namn på listan:",L.name);if(!n||!n.trim())return;L.name=n.trim().slice(0,40);break}
+ case"del":{if(!confirm(`Ta bort listan ”${L.name}”?`))return;S.lists=S.lists.filter(l=>l!==L);if(!S.lists.length)S.lists=[{id:uid(),name:"Handla",items:[]}];S.cur=S.lists[0].id;break}
+ case"clr":L.items=L.items.filter(x=>!x.d);break;
+ case"tog":L.items[i].d=!L.items[i].d;break;
+ case"inc":L.items[i].q++;break;
+ case"dec":if(L.items[i].q>1)L.items[i].q--;break;
+ case"rm":L.items.splice(i,1);break;
+ case"add":addP(RES[+el.dataset.j]);return;
+ case"custom":addCustom();return;
+ case"ord":view="ord";window.scrollTo(0,0);break;
+ case"ordok":view="list";break;
+ case"ordreset":S.order=AREAS.slice();break;
+ case"up":if(i>0)[S.order[i-1],S.order[i]]=[S.order[i],S.order[i-1]];break;
+ case"dn":if(i<S.order.length-1)[S.order[i+1],S.order[i]]=[S.order[i],S.order[i+1]];break;
+ default:return}
+ save();render()});
+let tmr;$("#q").addEventListener("input",e=>{clearTimeout(tmr);tmr=setTimeout(()=>{Q=e.target.value;render();window.scrollTo(0,0)},150)});
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter")e.target.blur()});
+$("#qx").onclick=()=>{$("#q").value="";Q="";render()};
+async function loadCat(){try{const r=await fetch("catalog.json",{cache:"no-cache"});if(!r.ok)throw new Error(r.status);const j=await r.json();
+ CATS=j.cats||{};IB=(j.imgBase||"").replace(/^http:/,"https:");
+ P=j.p.map(a=>({id:a[0],n:a[1],b:a[2]||"",s:a[3]||"",p:a[4],img:a[6]||"",c:a[7],k:(a[1]+" "+(a[2]||"")).toLowerCase()}));
+ FOOT=`${P.length.toLocaleString("sv-SE")} varor och priser från Coop.se, uppdaterade ${new Date(j.built).toLocaleDateString("sv-SE")}. Priserna i butiken kan skilja sig.`}
+ catch(e){CATERR=true;FOOT="Kunde inte ladda Coops sortiment just nu. Dina listor fungerar ändå."}
+ window.__ready=true;render()}
+window.__areaStats=()=>{const c={},o={};for(const p of P){const a=areaOf(p.c);c[a]=(c[a]||0)+1;if(a==="Övrigt"){const t=chainNames(p.c).slice(0,2).join(" > ");o[t]=(o[t]||0)+1}}
+ const tops=Object.entries(CATS).filter(([k,v])=>!v[1]).map(([k,v])=>v[0]);
+ const mids=Object.entries(CATS).filter(([k,v])=>v[1]&&CATS[v[1]]&&!CATS[v[1]][1]).map(([k,v])=>CATS[v[1]][0]+" > "+v[0]+" => "+areaOf(k));
+ return {c,o,tops,mids}};
+render();loadCat();
+</script></body></html>

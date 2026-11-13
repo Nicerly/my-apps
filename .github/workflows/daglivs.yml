@@ -1,0 +1,41 @@
+name: DaglivsMat catalog
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: daglivs-catalog
+  cancel-in-progress: false
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q httpx
+      - name: Build catalog from Coop
+        env:
+          COOP_KEY: ${{ secrets.COOP_KEY }}
+        run: |
+          cp site/daglivs/catalog.json /tmp/cat.json
+          python src/daglivs/build_daglivs.py /tmp/cat.json
+          python - <<'EOF'
+          import json, shutil
+          new = len(json.load(open("/tmp/cat.json"))["p"]); old = len(json.load(open("site/daglivs/catalog.json"))["p"])
+          print("products new", new, "old", old)
+          if new >= 0.7 * old: shutil.copy("/tmp/cat.json", "site/daglivs/catalog.json")
+          else: print("new catalog too small, keeping old")
+          EOF
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add site/daglivs/catalog.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -q -m "DaglivsMat: update Coop catalog"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done
