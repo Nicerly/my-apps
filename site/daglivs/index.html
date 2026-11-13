@@ -62,7 +62,7 @@ main{padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 40px)}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const uid=()=>Math.random().toString(36).slice(2,9);
-const AREAS=["Frukt & grönt","Bröd & bageri","Kött & fågel","Chark & pålägg","Fisk & skaldjur","Mejeri & ägg","Ost","Vegetariskt","Färdigmat","Skafferi","Kryddor & bakning","Fryst","Dryck","Godis & snacks","Barn","Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak","Övrigt"];
+const FINE=["Frukt & grönt","Bröd & bageri","Kött & fågel","Chark & pålägg","Fisk & skaldjur","Mejeri & ägg","Ost","Vegetariskt","Färdigmat","Skafferi","Kryddor & bakning","Fryst","Dryck","Godis & snacks","Barn","Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak","Hem & hygien"];const AREAS=["Frukt, grönt & bröd", "Kött, fisk & chark", "Mejeri, ost & fryst", "Skafferi, dryck & snacks", "Hem & hygien"];const DEPT={"Frukt & grönt": "Frukt, grönt & bröd", "Bröd & bageri": "Frukt, grönt & bröd", "Kött & fågel": "Kött, fisk & chark", "Chark & pålägg": "Kött, fisk & chark", "Fisk & skaldjur": "Kött, fisk & chark", "Vegetariskt": "Kött, fisk & chark", "Färdigmat": "Kött, fisk & chark", "Mejeri & ägg": "Mejeri, ost & fryst", "Ost": "Mejeri, ost & fryst", "Fryst": "Mejeri, ost & fryst", "Skafferi": "Skafferi, dryck & snacks", "Kryddor & bakning": "Skafferi, dryck & snacks", "Dryck": "Skafferi, dryck & snacks", "Godis & snacks": "Skafferi, dryck & snacks", "Hälsa & hygien": "Hem & hygien", "Hushåll & städ": "Hem & hygien", "Barn": "Hem & hygien", "Djur": "Hem & hygien", "Hem & fritid": "Hem & hygien", "Kiosk & tobak": "Hem & hygien", "Hem & hygien": "Hem & hygien", "Frukt, grönt & bröd": "Frukt, grönt & bröd", "Kött, fisk & chark": "Kött, fisk & chark", "Mejeri, ost & fryst": "Mejeri, ost & fryst", "Skafferi, dryck & snacks": "Skafferi, dryck & snacks", "Hem & hygien": "Hem & hygien"};function areaOf(c){return DEPT[fineAreaOf(c)]||"Hem & hygien"}
 const TOPM={"Frukt & Grönsaker":"Frukt & grönt","Bröd & Bageri":"Bröd & bageri","Kött, Fågel & Chark":"Kött & fågel","Fisk & Skaldjur":"Fisk & skaldjur","Mejeri & Ägg":"Mejeri & ägg","Ost":"Ost","Vegetariskt":"Vegetariskt","Färdigmat & Mellanmål":"Färdigmat","Delikatesser":"Ost","Skafferi":"Skafferi","Kryddor & Smaksättare":"Kryddor & bakning","Frys":"Fryst","Dryck":"Dryck","Godis, Glass & Snacks":"Godis & snacks","Barn":"Barn","Skönhet & Hygien":"Hälsa & hygien","Apotek, hälsa & tillskott":"Hälsa & hygien","Hushåll":"Hushåll & städ","Djurmat & Tillbehör":"Djur","Fritid":"Hem & fritid","Hem & inredning":"Hem & fritid","Kiosk & Tidningar":"Kiosk & tobak"};
 const MIDM={"Kött, Fågel & Chark>Pålägg & Deli":"Chark & pålägg","Kött, Fågel & Chark>Korv":"Chark & pålägg","Kött, Fågel & Chark>Chark":"Chark & pålägg","Delikatesser>Delikatesschark":"Chark & pålägg","Godis, Glass & Snacks>Glass":"Fryst","Vegetariskt>Fryst":"Fryst","Skafferi>Bakning":"Kryddor & bakning"};
 const STRONG=[[/fryst|frys/i,"Fryst"],[/barn|bebis/i,"Barn"],[/djur/i,"Djur"],[/hälsa|skönhet|hygien|apotek|kropp|rak|lödder|tvål|schampo/i,"Hälsa & hygien"],[/städ|tvätt|hushåll|papper|disk|rengör/i,"Hushåll & städ"],[/tobak|snus|kiosk|tidning/i,"Kiosk & tobak"],[/hem &|fritid|leksak|blomm|inredning/i,"Hem & fritid"]];
@@ -70,17 +70,18 @@ const WEAK=[[/frukt|grönt|grönsak/i,"Frukt & grönt"],[/bröd|bageri|kakor|bul
 let P=[],CATS={},IB="",CATERR=false,FOOT="",RES=[],view="list",Q="";
 const AC={};
 function chainNames(cid){const out=[];let c=cid,g=0;while(c&&CATS[c]&&g++<8){out.unshift(CATS[c][0]);c=CATS[c][1]}return out}
-function areaOf(cid){if(cid in AC)return AC[cid];const ch=chainNames(cid),top=ch[0]||"",mid=ch[1]||"",all=ch.join(" ");
+function fineAreaOf(cid){if(cid in AC)return AC[cid];const ch=chainNames(cid),top=ch[0]||"",mid=ch[1]||"",all=ch.join(" ");
  let a=MIDM[top+">"+mid]||TOPM[top]||null;
  if(!a)for(const[r,n]of STRONG)if(r.test(all)){a=n;break}
  if(!a)for(const[r,n]of WEAK)if(r.test(all)){a=n;break}
- return AC[cid]=a||"Övrigt"}
+ return AC[cid]=a||"Hem & hygien"}
 const LS="daglivsmat.v1";
 let S;try{S=JSON.parse(localStorage.getItem(LS))||{}}catch(e){S={}}
 if(!Array.isArray(S.lists)||!S.lists.length)S.lists=[{id:uid(),name:"Handla",items:[]}];
 if(!S.lists.find(l=>l.id===S.cur))S.cur=S.lists[0].id;
 if(!Array.isArray(S.order))S.order=AREAS.slice();
 S.order=S.order.filter(a=>AREAS.includes(a));for(const a of AREAS)if(!S.order.includes(a))S.order.push(a);
+for(const l of S.lists)for(const it of (l.items||[]))if(!AREAS.includes(it.a))it.a=DEPT[it.a]||"Hem & hygien";
 const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast("Kunde inte spara listan")}};
 const cur=()=>S.lists.find(l=>l.id===S.cur);
 const fmtP=x=>x==null?"":Number(x).toFixed(2).replace(".",",")+" kr";
@@ -91,7 +92,7 @@ function actions(){return `<div class="bar"><button class="btn" data-act="ren">B
 function itemRow(it,i){const sub=[it.b,it.s,it.p!=null?fmtP(it.p):""].filter(Boolean).join(" · ");
  return `<div class="row${it.d?" done":""}"><div class="ck" data-act="tog" data-i="${i}">${it.d?"✓":""}</div>${it.img?`<img class="th" loading="lazy" src="${esc(imgU(it.img))}" alt="">`:""}<div class="tx" data-act="tog" data-i="${i}"><div class="nm">${esc(it.n)}</div>${sub?`<div class="sub">${esc(sub)}</div>`:""}</div><div class="qt"><button class="qb" data-act="dec" data-i="${i}" aria-label="Minska">−</button><span class="qn">${it.q}</span><button class="qb" data-act="inc" data-i="${i}" aria-label="Öka">+</button></div><button class="rm" data-act="rm" data-i="${i}" aria-label="Ta bort">×</button></div>`}
 function renderList(){const L=cur();if(!L.items.length)return `<div class="empty"><b>${esc(L.name)}</b> är tom.<br>Sök efter varor ovan för att lägga till dem.</div>`+actions();
- const by={};L.items.forEach((it,i)=>{const a=S.order.includes(it.a)?it.a:"Övrigt";(by[a]||(by[a]=[])).push([it,i])});
+ const by={};L.items.forEach((it,i)=>{const a=S.order.includes(it.a)?it.a:"Hem & hygien";(by[a]||(by[a]=[])).push([it,i])});
  let h="";for(const a of S.order){const g=by[a];if(!g)continue;g.sort((x,y)=>x[0].d-y[0].d);const left=g.filter(x=>!x[0].d).length;
   h+=`<div class="sec"><div class="sh"><span>${esc(a)}</span><span>${left?left+" kvar":"✓ klart"}</span></div><div class="card">`+g.map(([it,i])=>itemRow(it,i)).join("")+`</div></div>`}
  const tot=L.items.reduce((s,i)=>s+(i.p||0)*i.q,0),left=L.items.filter(i=>!i.d).length;
@@ -116,7 +117,7 @@ function renderRes(){const L=cur();if(!P.length&&!CATERR)return `<div class="emp
 function renderOrd(){return `<div class="tot">Ordna områdena i den ordning du går genom butiken.</div><div class="card ord">`+S.order.map((a,i)=>`<div class="row"><div class="tx"><div class="nm">${i+1}. ${esc(a)}</div></div><button class="qb" data-act="up" data-i="${i}" aria-label="Flytta upp">↑</button><button class="qb" data-act="dn" data-i="${i}" aria-label="Flytta ner">↓</button></div>`).join("")+`</div><div class="bar"><button class="btn" data-act="ordok" style="background:var(--g);color:#fff;border-color:var(--g)">Klar</button><button class="btn" data-act="ordreset">Återställ</button></div>`}
 function render(){renderChips();$("#qx").style.display=Q?"block":"none";$("main").innerHTML=Q.trim()?renderRes():view==="ord"?renderOrd():renderList()}
 function addP(p){if(!p)return;const L=cur();const x=L.items.find(i=>i.k===p.id);if(x){x.q++;x.d=false}else L.items.push({k:p.id,n:p.n,b:p.b,s:p.s,p:p.p,img:imgU(p.img),a:areaOf(p.c),q:1,d:false});save();toast("Lagt till: "+p.n);render()}
-function addCustom(){const n=Q.trim();if(!n)return;const L=cur();L.items.push({k:"x:"+uid(),n:n.slice(0,60),b:"",s:"",p:null,img:"",a:RES[0]?areaOf(RES[0].c):"Övrigt",q:1,d:false});save();toast("Lagt till: "+n);$("#q").value="";Q="";render()}
+function addCustom(){const n=Q.trim();if(!n)return;const L=cur();L.items.push({k:"x:"+uid(),n:n.slice(0,60),b:"",s:"",p:null,img:"",a:RES[0]?areaOf(RES[0].c):"Hem & hygien",q:1,d:false});save();toast("Lagt till: "+n);$("#q").value="";Q="";render()}
 document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const act=el.dataset.act,i=+el.dataset.i,L=cur();
  switch(act){case"sel":S.cur=el.dataset.id;view="list";break;
  case"newlist":{const n=prompt("Namn på den nya listan:","Ny lista");if(!n||!n.trim())return;const l={id:uid(),name:n.trim().slice(0,40),items:[]};S.lists.push(l);S.cur=l.id;view="list";break}
@@ -145,7 +146,7 @@ async function loadCat(){try{const r=await fetch("catalog.json",{cache:"no-cache
  FOOT=`${P.length.toLocaleString("sv-SE")} varor och priser från Coop.se, uppdaterade ${new Date(j.built).toLocaleDateString("sv-SE")}. Priserna i butiken kan skilja sig.`}
  catch(e){CATERR=true;FOOT="Kunde inte ladda Coops sortiment just nu. Dina listor fungerar ändå."}
  window.__ready=true;render()}
-window.__areaStats=()=>{const c={},o={};for(const p of P){const a=areaOf(p.c);c[a]=(c[a]||0)+1;if(a==="Övrigt"){const t=chainNames(p.c).slice(0,2).join(" > ");o[t]=(o[t]||0)+1}}
+window.__areaStats=()=>{const c={},o={};for(const p of P){const a=areaOf(p.c);c[a]=(c[a]||0)+1;if(a==="Hem & hygien"){const t=chainNames(p.c).slice(0,2).join(" > ");o[t]=(o[t]||0)+1}}
  const tops=Object.entries(CATS).filter(([k,v])=>!v[1]).map(([k,v])=>v[0]);
  const mids=Object.entries(CATS).filter(([k,v])=>v[1]&&CATS[v[1]]&&!CATS[v[1]][1]).map(([k,v])=>CATS[v[1]][0]+" > "+v[0]+" => "+areaOf(k));
  return {c,o,tops,mids}};
