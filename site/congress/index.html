@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Congress"><meta name="theme-color" content="#0f172a">
+<title>Congress Trades</title><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
+<style>/*ct1*/
+:root{--bg:#f1f3f6;--tx:#111827;--mu:#6b7280;--ln:#e5e7eb;--d:#1d4ed8;--r:#dc2626;--up:#059669;--dn:#dc2626;--ac:#0f172a}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+header{position:sticky;top:0;z-index:5;background:var(--ac);color:#fff;padding:calc(env(safe-area-inset-top) + 20px) 14px 10px}
+@media (display-mode: standalone){header{padding-top:max(calc(env(safe-area-inset-top) + 20px),76px)}}
+.tt{font-size:20px;font-weight:700}.up{font-size:12px;color:#cbd5e1;margin-top:2px}
+.tabs{display:flex;gap:6px;margin-top:10px}.tabs a{flex:1;text-align:center;padding:7px 0;border-radius:9px;color:#e2e8f0;text-decoration:none;font-weight:600;font-size:14px;background:rgba(255,255,255,.1)}
+.tabs a.on{background:#fff;color:var(--ac)}
+.bar{padding:10px 12px 2px}#q{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--ln);border-radius:10px;background:#fff;-webkit-appearance:none}
+.chips{display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px}.chip{border:1px solid var(--ln);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;white-space:nowrap;color:var(--tx)}
+.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}.sep{flex:none;width:1px;background:var(--ln);margin:2px 2px}
+main{padding:2px 12px calc(env(safe-area-inset-bottom) + 28px)}
+.card{background:#fff;border-radius:14px;padding:4px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.pel{border:2px solid #8b5cf6;padding-top:10px}.hd{font-size:12px;color:var(--mu);margin:12px 2px 0;text-transform:uppercase;letter-spacing:.03em}
+.tr{padding:10px 0;border-bottom:1px solid var(--ln)}.tr:last-child{border-bottom:0}
+.l1{display:flex;align-items:center;gap:6px;min-width:0}.ty{font-size:11px;font-weight:700;padding:2px 6px;border-radius:5px;text-transform:uppercase;flex:none}
+.buy{background:#dcfce7;color:#166534}.sell{background:#fee2e2;color:#991b1b}.ex{background:#e5e7eb;color:#374151}
+.tk{flex:none}.as{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mu);font-size:13px}
+.pf{flex:none;font-weight:700;font-size:14px}.up2,.up{color:var(--up)}.dn{color:var(--dn)}
+.l2{margin-top:3px;font-size:14px}.l2 a{color:var(--tx);font-weight:600;text-decoration:none}.l3{margin-top:2px;font-size:12px;color:var(--mu)}.l3 a{color:var(--d)}
+.pt{display:inline-block;min-width:18px;text-align:center;font-size:11px;font-weight:700;color:#fff;border-radius:4px;padding:1px 4px;background:#6b7280}.pt.D{background:var(--d)}.pt.R{background:var(--r)}
+.mi{font-size:12px;color:var(--mu)}.nm{font-weight:700;font-size:16px}.nm.big{font-size:20px;margin-top:6px}
+.mrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--ln);text-decoration:none;color:inherit}.mrow:last-child{border-bottom:0}
+.mm{flex:1;min-width:0}.sm{font-size:12px;color:var(--mu);margin-top:2px}
+.lk{display:block;padding:10px 0;color:var(--d);text-decoration:none;font-weight:600}
+.kv{display:flex;gap:8px;margin:10px 0}.kv div{flex:1;background:var(--bg);border-radius:10px;padding:8px 4px;text-align:center}.kv b{display:block;font-size:17px}.kv span{font-size:11px;color:var(--mu)}
+.more{display:block;width:100%;padding:12px;margin:10px 0;border:0;border-radius:10px;background:#fff;font-size:15px;font-weight:600;color:var(--d)}
+.em{padding:16px 4px;color:var(--mu)}.ab p{margin:10px 0}.ab h3{margin:14px 0 4px;font-size:16px}
+</style></head><body>
+<header><div class="tt">Congress Trades</div><div class="up" id="up">Loading…</div>
+<nav class="tabs"><a href="#latest" data-v="latest">Latest</a><a href="#members" data-v="members">Members</a><a href="#about" data-v="about">About</a></nav></header>
+<div id="ctl" class="bar"><input id="q" type="search" placeholder="Search member, ticker or company" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><div id="chips" class="chips"></div></div>
+<main id="v"><div class="em">Loading trades…</div></main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const TY={P:"Buy",S:"Sell",SP:"Sell (part)",E:"Exchange"},AT={ST:"Stock",OP:"Option",EF:"ETF",MF:"Fund",CS:"Bond",GS:"Bond",CT:"Crypto",AB:"Private fund",OT:"Other"};
+const OW={SP:"Spouse",JT:"Joint",DC:"Child"},CH={H:"House",S:"Senate"};
+let D,M,T,PEL,ST={},V="latest",MID=null,F={ch:"",ty:"",q:""},LIM=60;
+function money(n){return n>=1e6?"$"+(+(n/1e6).toFixed(1))+"M":n>=1e3?"$"+Math.round(n/1e3)+"K":"$"+n}
+function amt(x){return x.lo==null?"":x.hi?money(x.lo)+"–"+money(x.hi):"Over "+money(x.lo)}
+function fd(s){if(!s)return"?";const d=new Date(s+"T12:00:00Z");return isNaN(d)?s:d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}
+function pct(r){return (r>0?"+":"")+(r*100).toFixed(1)+"%"}
+function usd(n){return n==null?"?":"$"+n.toLocaleString("en-US",{maximumFractionDigits:n>=100?0:2})}
+function dist(sd){if(!sd)return"";if(sd.length<=2)return sd;const n=+sd.slice(2);return sd.slice(0,2)+"-"+(n||"AL")}
+function minfo(id){const m=M[id]||{};return `<span class="pt ${esc(m.pt)}">${esc(m.pt||"?")}</span> <span class="mi">${CH[m.ch]||""}${m.sd?" · "+esc(dist(m.sd)):""}</span>`}
+function row(x,sm){const t=D.tick[x.tk]||{},c=x.ty==="P"?"buy":x.ty==="E"?"ex":"sell",u=(D.docs[x.k]||{}).u;
+ const meta=[amt(x),x.at!=="ST"?AT[x.at]||"":"",OW[x.ow]||""].filter(Boolean).join(" · ");
+ return `<div class="tr"><div class="l1"><span class="ty ${c}">${TY[x.ty]||esc(x.ty)}</span><b class="tk">${esc(x.tk||"")}</b><span class="as">${esc(x.as)}</span>${x.r!=null?`<span class="pf ${x.r>=0?"up":"dn"}">${pct(x.r)}</span>`:""}</div>`+
+ (sm?`<div class="l2"><a href="#m/${encodeURIComponent(x.m)}">${esc((M[x.m]||{}).n||x.m)}</a> ${minfo(x.m)}</div>`:"")+
+ `<div class="l3">${esc(meta)}</div><div class="l3">Traded ${fd(x.td)} · filed ${fd(x.fd)}${x.px&&t.c?` · ${usd(x.px)} → ${usd(t.c)}`:""}${u?` · <a href="${esc(u)}" target="_blank" rel="noopener">Report</a>`:""}</div></div>`}
+function stats(){for(const x of T){const s=ST[x.m]||(ST[x.m]={n:0,b:0,s:0,last:"",rs:0,rn:0});s.n++;if(x.ty==="P"){s.b++;if(x.r!=null){s.rs+=x.r;s.rn++}}else if(x.ty!=="E")s.s++;if((x.fd||"")>s.last)s.last=x.fd||""}}
+function pass(x){const m=M[x.m]||{};if(F.ch&&m.ch!==F.ch)return 0;if(F.ty==="P"&&x.ty!=="P")return 0;if(F.ty==="S"&&x.ty!=="S"&&x.ty!=="SP")return 0;
+ const q=F.q;if(q){const tk=(x.tk||"").toLowerCase();if(!(tk===q||(q.length>1&&tk.startsWith(q))||(x.as||"").toLowerCase().includes(q)||(m.n||"").toLowerCase().includes(q)))return 0}return 1}
+function chips(){const c=[["ch","","All"],["ch","H","House"],["ch","S","Senate"]];let h=c.map(chip).join("");
+ if(V!=="members")h+='<span class="sep"></span>'+[["ty","","Buys & sells"],["ty","P","Buys"],["ty","S","Sells"]].map(chip).join("");$("#chips").innerHTML=h}
+function chip([k,v,l]){return `<button class="chip${F[k]===v?" on":""}" data-k="${k}" data-v="${v}">${l}</button>`}
+function more(n){return n>LIM?`<button class="more" data-more>Show more (${(n-LIM).toLocaleString()} left)</button>`:""}
+function pelCard(){if(!PEL)return"";const s=ST[PEL]||{n:0},tr=T.filter(x=>x.m===PEL&&pass(x)).slice(0,3);
+ return `<div class="card pel"><div class="nm">📌 ${esc(M[PEL].n)}</div><div>${minfo(PEL)} <span class="mi">· ${s.n} trades · last filed ${fd(s.last)}</span></div>${tr.map(x=>row(x,0)).join("")}<a class="lk" href="#m/${encodeURIComponent(PEL)}">All of Pelosi's trades →</a></div>`}
+function vLatest(){const L=T.filter(pass);return (!F.q&&F.ch!=="S"?pelCard():"")+`<div class="hd">${L.length.toLocaleString()} trades · newest reports first</div><div class="card">${L.slice(0,LIM).map(x=>row(x,1)).join("")||'<div class="em">No trades match.</div>'}</div>`+more(L.length)}
+function vMembers(){const q=F.q;const ids=Object.keys(M).filter(id=>ST[id]&&(!F.ch||M[id].ch===F.ch)&&(!q||(M[id].n||"").toLowerCase().includes(q)));
+ ids.sort((a,b)=>(b===PEL)-(a===PEL)||ST[b].n-ST[a].n);
+ return `<div class="hd">${ids.length} members · right: average change of their buys since the trade</div><div class="card">`+(ids.slice(0,LIM).map(id=>{const s=ST[id],a=s.rn?s.rs/s.rn:null;
+  return `<a class="mrow" href="#m/${encodeURIComponent(id)}"><div class="mm"><div class="nm">${id===PEL?"📌 ":""}${esc(M[id].n)}</div><div class="sm">${minfo(id)} · ${s.n} trades · last filed ${fd(s.last)}</div></div>${a!=null?`<div class="pf ${a>=0?"up":"dn"}">${pct(a)}</div>`:""}</a>`}).join("")||'<div class="em">No members match.</div>')+`</div>`+more(ids.length)}
+function vMember(){const id=MID,m=M[id];if(!m)return'<div class="em">Member not found.</div>';const s=ST[id]||{n:0,b:0,s:0,rn:0,rs:0},L=T.filter(x=>x.m===id&&pass(x)),a=s.rn?s.rs/s.rn:null;
+ return `<a class="lk" href="#members">← All members</a><div class="card"><div class="nm big">${esc(m.n)}</div><div>${minfo(id)}</div><div class="kv"><div><b>${s.n}</b><span>trades</span></div><div><b>${s.b}</b><span>buys</span></div><div><b>${s.s}</b><span>sells</span></div><div><b class="${a==null?"":a>=0?"up":"dn"}">${a==null?"–":pct(a)}</b><span>avg. buy since</span></div></div></div><div class="hd">${L.length.toLocaleString()} trades</div><div class="card">${L.slice(0,LIM).map(x=>row(x,0)).join("")||'<div class="em">No trades match.</div>'}</div>`+more(L.length)}
+function vAbout(){return `<div class="card ab"><h3>What this shows</h3><p>Stock trades that members of the House and Senate have reported in their official disclosure reports: the House Clerk's Periodic Transaction Reports and the Senate's eFD reports. ${T.length.toLocaleString()} trades from ${Object.keys(ST).length} members since ${D.years?D.years[0]:""}.</p>
+<h3>Why trades show up late</h3><p>Members have up to 45 days to report a trade, so the newest trades often appear weeks after they happened. "Traded" is the trade date; "filed" is when the report came out.</p>
+<h3>Amounts and gains</h3><p>Reports only give a range (for example $1K–$15K), not the exact amount. The % is the stock's change from its closing price on the trade date to the latest price. For a sale it shows how the stock has moved since they sold. It's not their actual profit.</p>
+<h3>Missing trades</h3><p>Some reports are filed on paper and scanned, so they can't be read automatically. Tap "Report" to see any original filing (Senate links first show the Senate's own agreement page).</p>
+<h3>Updates</h3><p>Data is refreshed once a day. Last update: ${new Date(D.updated).toLocaleString("en-US")}. Prices from Yahoo Finance or Nasdaq. Not investment advice.</p></div>`}
+function render(){const h=decodeURIComponent(location.hash.slice(1)||"latest");if(h.startsWith("m/")){V="member";MID=h.slice(2)}else V=["latest","members","about"].includes(h)?h:"latest";
+ document.querySelectorAll(".tabs a").forEach(a=>a.classList.toggle("on",a.dataset.v===(V==="member"?"members":V)));
+ $("#ctl").style.display=V==="about"?"none":"";$("#q").placeholder=V==="members"?"Search members":"Search member, ticker or company";chips();
+ $("#v").innerHTML=V==="members"?vMembers():V==="member"?vMember():V==="about"?vAbout():vLatest()}
+$("#q").addEventListener("input",e=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{F.q=e.target.value.trim().toLowerCase();LIM=60;render()},180)});
+document.addEventListener("click",e=>{const c=e.target.closest(".chip");if(c){F[c.dataset.k]=c.dataset.v;LIM=60;render();return}if(e.target.closest("[data-more]")){LIM+=100;render()}});
+window.addEventListener("hashchange",()=>{LIM=60;F.q="";$("#q").value="";render();scrollTo(0,0)});
+async function load(){try{const r=await fetch("data.json?h="+new Date().toISOString().slice(0,13),{cache:"no-cache"});if(!r.ok)throw 0;D=await r.json()}
+ catch(e){$("#v").innerHTML='<div class="em">Could not load the trades. Check your connection and try again.</div>';$("#up").textContent="";return}
+ M=D.members;T=D.trades;PEL=Object.keys(M).find(k=>k.startsWith("H-pelosi"));stats();
+ $("#up").textContent="Updated "+new Date(D.updated).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+" · "+T.length.toLocaleString()+" trades";
+ render();window.__ready=true}
+load();
+</script></body></html>

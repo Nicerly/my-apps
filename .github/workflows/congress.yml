@@ -1,0 +1,44 @@
+name: Congress trades
+on:
+  schedule:
+    - cron: "41 11 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: congress-data
+  cancel-in-progress: false
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q httpx pypdf
+      - name: Build congress trades
+        env:
+          CONGRESS_PREV: /tmp/prev.json
+          PRICE_SRC: yahoo,nasdaq
+          PRICE_BUDGET: "1500"
+          RETRY_BUDGET: "900"
+        run: |
+          cp site/congress/data.json /tmp/prev.json
+          python src/congress/build_congress.py /tmp/new.json
+          python - <<'EOF'
+          import json, shutil
+          new = json.load(open("/tmp/new.json")); old = json.load(open("/tmp/prev.json"))
+          print("trades new", len(new["trades"]), "old", len(old["trades"]))
+          if len(new["trades"]) >= 0.9 * len(old["trades"]): shutil.copy("/tmp/new.json", "site/congress/data.json")
+          else: print("new data too small, keeping old")
+          EOF
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -f site/congress/data.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -q -m "Congress trades: daily update"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done
