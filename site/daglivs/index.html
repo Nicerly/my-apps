@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="DaglivsMat">
 <meta name="theme-color" content="#00a142">
 <title>DaglivsMat</title>
-<style>/*dm8*//*dm5*//*dm7*//*dm2*/
+<style>/*dm10*//*dm8*//*dm5*//*dm7*//*dm2*/
 :root{--g:#00a142;--gd:#007a32;--bg:#f2f5f2;--card:#fff;--line:#e2e7e2;--fg:#1b1f1b;--mut:#687068}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
@@ -18,7 +18,7 @@ header{position:sticky;top:0;z-index:10;background:var(--g);color:#fff;padding:c
 .top{display:flex;align-items:baseline;gap:10px;min-width:0}
 h1{font-size:21px;margin:0;flex:none}
 #st{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-#lists{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+#lists{display:none;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
 #lists::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;border:0;border-radius:16px;padding:6px 12px;font-size:14px;background:rgba(255,255,255,.2);color:#fff;white-space:nowrap}
 .chip.on{background:#fff;color:var(--gd);font-weight:600}
@@ -90,7 +90,7 @@ function fineAreaOf(cid){if(cid in AC)return AC[cid];const ch=chainNames(cid),to
 const LS="daglivsmat.v1";
 let S;try{S=JSON.parse(localStorage.getItem(LS))||{}}catch(e){S={}}
 if(!Array.isArray(S.lists)||!S.lists.length)S.lists=[{id:uid(),name:"Handla",items:[]}];
-if(!S.lists.find(l=>l.id===S.cur))S.cur=S.lists[0].id;
+if(!S.lists.find(l=>l.id===S.cur))S.cur=S.lists[0].id;{const all=[],seen=new Map();for(const l of S.lists)for(const it of (l.items||[])){const x=seen.get(it.k);if(x){x.q=(x.q||1)+(it.q||1);x.d=!!(x.d&&it.d)}else{seen.set(it.k,it);all.push(it)}}S.lists=[{id:S.lists[0].id,name:"Inköpslista",items:all}];S.cur=S.lists[0].id}
 if(!Array.isArray(S.order))S.order=AREAS.slice();
 S.order=S.order.filter(a=>AREAS.includes(a));for(const a of AREAS)if(!S.order.includes(a))S.order.push(a);
 for(const l of S.lists)for(const it of (l.items||[]))if(!AREAS.includes(it.a))it.a=OLDD[it.a]||DEPT[it.a]||"Upp";
@@ -99,16 +99,15 @@ const cur=()=>S.lists.find(l=>l.id===S.cur);
 const fmtP=x=>x==null?"":Number(x).toFixed(2).replace(".",",")+" kr";
 function imgU(i){if(!i)return"";if(/^https?:/.test(i))return i.replace(/^http:/,"https:");return IB?IB+"w_96,h_96,c_pad,b_white,f_auto,q_auto/"+i:""}
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),1400)}
-function renderChips(){$("#lists").innerHTML=S.lists.map(l=>{const n=l.items.filter(i=>!i.d).length;return `<button class="chip${l.id===S.cur?" on":""}" data-act="sel" data-id="${l.id}">${esc(l.name)}${n?` <span style="opacity:.7">${n}</span>`:""}</button>`}).join("")+`<button class="chip" data-act="newlist">+ Ny lista</button>`}
-function actions(){return `<div class="bar"><button class="btn" data-act="ren">Byt namn</button><button class="btn" data-act="clr">Rensa avbockade</button><button class="btn" data-act="ord">Ordna områden</button><button class="btn" data-act="del" style="color:#c33">Ta bort lista</button></div><div class="foot">Tryck på avdelningen under en vara (t.ex. ”Bak ▾”) för att välja var den ska ligga. Appen kommer ihåg valet för den varan.</div><div class="foot">${esc(FOOT)}</div>`}
+function renderChips(){$("#lists").innerHTML=""}
+function actions(){return `<div class="bar"><button class="btn" data-act="clr">Rensa avbockade</button><button class="btn" data-act="ord">Ordna områden</button></div><div class="foot">Tryck på avdelningen under en vara (t.ex. ”Bak ▾”) för att välja var den ska ligga. Appen kommer ihåg valet för den varan.</div><div class="foot">${esc(FOOT)}</div>`}
 function itemRow(it,i){const sub=[it.b,it.s,it.p!=null?fmtP(it.p):""].filter(Boolean).join(" · ");
  return `<div class="row${it.d?" done":""}"><div class="ck" data-act="tog" data-i="${i}">${it.d?"✓":""}</div>${it.img?`<img class="th" loading="lazy" src="${esc(imgU(it.img))}" alt="">`:""}<div class="tx" data-act="tog" data-i="${i}"><div class="nm">${esc(it.n)}</div><div class="sub"><span class="dt" data-act="pickl" data-i="${i}">${esc(it.a)} ▾</span>${sub?" · "+esc(sub):""}</div></div><div class="qt"><button class="qb" data-act="dec" data-i="${i}" aria-label="Minska">−</button><span class="qn">${it.q}</span><button class="qb" data-act="inc" data-i="${i}" aria-label="Öka">+</button></div><button class="rm" data-act="rm" data-i="${i}" aria-label="Ta bort">×</button></div>`}
-function renderList(){const L=cur();if(!L.items.length)return `<div class="empty"><b>${esc(L.name)}</b> är tom.<br>Sök efter varor ovan för att lägga till dem.</div>`+actions();
- const by={};L.items.forEach((it,i)=>{const a=S.order.includes(it.a)?it.a:"Upp";(by[a]||(by[a]=[])).push([it,i])});
- let h="";for(const a of S.order){const g=by[a];if(!g)continue;g.sort((x,y)=>x[0].d-y[0].d);const left=g.filter(x=>!x[0].d).length;
-  h+=`<div class="sec"><div class="sh"><span>${esc(a)}</span><span>${left?left+" kvar":"✓ klart"}</span></div><div class="card">`+g.map(([it,i])=>itemRow(it,i)).join("")+`</div></div>`}
+function renderList(){const L=cur();if(!L.items.length)return `<div class="empty">Inköpslistan är tom.<br>Sök efter varor ovan för att lägga till dem.</div>`+actions();
+ const rk=a=>{const x=S.order.indexOf(a);return x<0?99:x};
+ const g=L.items.map((it,i)=>[it,i]).sort((x,y)=>((+!!x[0].d)-(+!!y[0].d))||(rk(x[0].a)-rk(y[0].a))||(x[1]-y[1]));
  const tot=L.items.reduce((s,i)=>s+(i.p||0)*i.q,0),left=L.items.filter(i=>!i.d).length;
- return `<div class="tot">${left} av ${L.items.length} varor kvar${tot?" · ca "+fmtP(tot):""}</div>`+h+actions()}
+ return `<div class="tot">${left} av ${L.items.length} varor kvar${tot?" · ca "+fmtP(tot):""}</div><div class="card">`+g.map(([it,i])=>itemRow(it,i)).join("")+`</div>`+actions()}
 const WC={};const WS=/[^a-zåäöéüæø0-9%]+/;
 function catWords(cid){if(cid in WC)return WC[cid];return WC[cid]=chainNames(cid).join(" ").toLowerCase().split(WS).filter(Boolean)}
 const NONFOOD=new Set(["Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak"]);
@@ -122,7 +121,7 @@ function search(q){const t=q.toLowerCase().split(/\s+/).filter(Boolean);if(!t.le
  out.sort((a,b)=>a[0]-b[0]);return out.slice(0,60).map(x=>x[1])}
 function renderRes(){const L=cur();if(!P.length&&!CATERR)return `<div class="empty">Laddar Coops sortiment…</div>`;
  RES=search(Q);const inL=k=>L.items.find(i=>i.k===k);
- let h=`<div class="tot">${CATERR?"Coops sortiment kunde inte laddas":RES.length?(RES.length>=60?"Visar de 60 bästa träffarna":RES.length+" träffar"):"Inga träffar i Coops sortiment"} · läggs i <b>${esc(L.name)}</b></div><div class="card">`;
+ let h=`<div class="tot">${CATERR?"Coops sortiment kunde inte laddas":RES.length?(RES.length>=60?"Visar de 60 bästa träffarna":RES.length+" träffar"):"Inga träffar i Coops sortiment"} · läggs i inköpslistan</div><div class="card">`;
  h+=RES.map((p,j)=>{const x=inL(p.id);const sub=[p.b,p.s,p.p!=null?fmtP(p.p):""].filter(Boolean).join(" · ");
   return `<div class="row" data-act="add" data-j="${j}">${p.img?`<img class="th" loading="lazy" src="${esc(imgU(p.img))}" alt="">`:`<div class="th"></div>`}<div class="tx"><div class="nm">${esc(p.n)}</div><div class="sub">${esc(sub)}</div><div class="sub"><span class="dt" data-act="pick" data-j="${j}">${esc(pArea(p))} ▾</span></div></div><button class="add${x?" in":""}" data-act="add" data-j="${j}" aria-label="Lägg till">${x?"✓"+x.q:"+"}</button></div>`}).join("");
  h+=`<div class="row" data-act="custom"><div class="th" style="display:flex;align-items:center;justify-content:center;font-size:20px;background:none">✎</div><div class="tx"><div class="nm">Lägg till ”${esc(Q.trim())}”</div><div class="sub">som egen vara</div></div><button class="add" data-act="custom" aria-label="Lägg till egen vara">+</button></div></div>`;return h}
