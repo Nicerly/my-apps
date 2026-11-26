@@ -55,6 +55,7 @@ main{padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 40px)}
 #toast.on{opacity:1}
 /*dm3*/.row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;display:none;align-items:flex-end}#sheet.on{display:flex}.sb{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:14px 12px calc(env(safe-area-inset-bottom,0px) + 14px)}.st{font-weight:600;margin:0 4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sbtn{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#f6f8f6;border-radius:10px;padding:12px;font-size:16px;margin-top:6px;color:var(--fg)}.sbtn.on{background:#cdebd8;border-color:var(--g);font-weight:600}.sbtn.cx{text-align:center;color:#c33;background:#fff}
 /*dm9*/.dt{display:inline-block;color:var(--gd);font-weight:600;padding:1px 7px;border-radius:6px;background:#e3f4e9;margin-right:2px}#psheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:31;display:none;align-items:flex-end}#psheet.on{display:flex}
+/*dm11*/.fq .nm{font-size:14px}.fg{flex:none;border:0;background:none;color:#aaa;font-size:20px;width:26px;padding:0}
 </style></head><body>
 <header><div class="top"><h1>DaglivsMat</h1><span id="st">Coop Daglivs · Fridhemsplan</span></div>
 <div id="lists"></div>
@@ -95,6 +96,8 @@ if(!Array.isArray(S.order))S.order=AREAS.slice();
 S.order=S.order.filter(a=>AREAS.includes(a));for(const a of AREAS)if(!S.order.includes(a))S.order.push(a);
 for(const l of S.lists)for(const it of (l.items||[]))if(!AREAS.includes(it.a))it.a=OLDD[it.a]||DEPT[it.a]||"Upp";
 const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast("Kunde inte spara listan")}};
+if(!S.hist||typeof S.hist!=="object")S.hist={};
+if(!S.hv){for(const l of S.lists)for(const it of l.items){if(/^x:/.test(it.k))it.k=ckey(it.n);if(!S.hist[it.k])S.hist[it.k]={n:it.n,b:it.b||"",s:it.s||"",p:it.p,img:it.img||"",c:it.c||null,a:it.a,cnt:1,t:Date.now()}}S.hv=1;save()}
 const cur=()=>S.lists.find(l=>l.id===S.cur);
 const fmtP=x=>x==null?"":Number(x).toFixed(2).replace(".",",")+" kr";
 function imgU(i){if(!i)return"";if(/^https?:/.test(i))return i.replace(/^http:/,"https:");return IB?IB+"w_96,h_96,c_pad,b_white,f_auto,q_auto/"+i:""}
@@ -103,11 +106,11 @@ function renderChips(){$("#lists").innerHTML=""}
 function actions(){return `<div class="bar"><button class="btn" data-act="clr">Rensa avbockade</button><button class="btn" data-act="ord">Ordna områden</button></div><div class="foot">Tryck på avdelningen under en vara (t.ex. ”Bak ▾”) för att välja var den ska ligga. Appen kommer ihåg valet för den varan.</div><div class="foot">${esc(FOOT)}</div>`}
 function itemRow(it,i){const sub=[it.b,it.s,it.p!=null?fmtP(it.p):""].filter(Boolean).join(" · ");
  return `<div class="row${it.d?" done":""}"><div class="ck" data-act="tog" data-i="${i}">${it.d?"✓":""}</div>${it.img?`<img class="th" loading="lazy" src="${esc(imgU(it.img))}" alt="">`:""}<div class="tx" data-act="tog" data-i="${i}"><div class="nm">${esc(it.n)}</div><div class="sub"><span class="dt" data-act="pickl" data-i="${i}">${esc(it.a)} ▾</span>${sub?" · "+esc(sub):""}</div></div><div class="qt"><button class="qb" data-act="dec" data-i="${i}" aria-label="Minska">−</button><span class="qn">${it.q}</span><button class="qb" data-act="inc" data-i="${i}" aria-label="Öka">+</button></div><button class="rm" data-act="rm" data-i="${i}" aria-label="Ta bort">×</button></div>`}
-function renderList(){const L=cur();if(!L.items.length)return `<div class="empty">Inköpslistan är tom.<br>Sök efter varor ovan för att lägga till dem.</div>`+actions();
+function renderList(){const L=cur();if(!L.items.length)return `<div class="empty">Inköpslistan är tom.<br>Sök efter varor ovan för att lägga till dem.</div>`+renderFreq()+actions();
  const rk=a=>{const x=S.order.indexOf(a);return x<0?99:x};
  const g=L.items.map((it,i)=>[it,i]).sort((x,y)=>((+!!x[0].d)-(+!!y[0].d))||(rk(x[0].a)-rk(y[0].a))||(x[1]-y[1]));
  const tot=L.items.reduce((s,i)=>s+(i.p||0)*i.q,0),left=L.items.filter(i=>!i.d).length;
- return `<div class="tot">${left} av ${L.items.length} varor kvar${tot?" · ca "+fmtP(tot):""}</div><div class="card">`+g.map(([it,i])=>itemRow(it,i)).join("")+`</div>`+actions()}
+ return `<div class="tot">${left} av ${L.items.length} varor kvar${tot?" · ca "+fmtP(tot):""}</div><div class="card">`+g.map(([it,i])=>itemRow(it,i)).join("")+`</div>`+renderFreq()+actions()}
 const WC={};const WS=/[^a-zåäöéüæø0-9%]+/;
 function catWords(cid){if(cid in WC)return WC[cid];return WC[cid]=chainNames(cid).join(" ").toLowerCase().split(WS).filter(Boolean)}
 const NONFOOD=new Set(["Hälsa & hygien","Hushåll & städ","Djur","Hem & fritid","Kiosk & tobak"]);
@@ -116,9 +119,10 @@ function search(q){const t=q.toLowerCase().split(/\s+/).filter(Boolean);if(!t.le
   const w=p.w||(p.w=p.n.toLowerCase().split(WS).filter(Boolean));
   let lv=3;for(let i=0;i<w.length;i++){const x=w[i];const l=x===t0?(i===0?0:0.4):x.endsWith(t0)?1:x.startsWith(t0)?2:3;if(l<lv)lv=l}
   const cm=catWords(p.c).some(x=>x===t0||(t0.length>=4&&x.endsWith(t0)));
-  const s=lv+(cm?-1.5:0)+(!cm&&NONFOOD.has(fineAreaOf(p.c))?0.8:0);
+  const s=lv+(cm?-1.5:0)+(!cm&&NONFOOD.has(fineAreaOf(p.c))?0.8:0)+histBoost(p.id);
   out.push([s*1000+Math.min(p.n.length,999),p])}
- out.sort((a,b)=>a[0]-b[0]);return out.slice(0,60).map(x=>x[1])}
+ for(const[k,h]of Object.entries(S.hist||{}))if(/^x:/.test(k)&&t.every(x=>h.n.toLowerCase().includes(x)))out.push([-9000+h.n.length-Math.min(h.cnt,50),histP(k,h)]);
+  out.sort((a,b)=>a[0]-b[0]);return out.slice(0,60).map(x=>x[1])}
 function renderRes(){const L=cur();if(!P.length&&!CATERR)return `<div class="empty">Laddar Coops sortiment…</div>`;
  RES=search(Q);const inL=k=>L.items.find(i=>i.k===k);
  let h=`<div class="tot">${CATERR?"Coops sortiment kunde inte laddas":RES.length?(RES.length>=60?"Visar de 60 bästa träffarna":RES.length+" träffar"):"Inga träffar i Coops sortiment"} · läggs i inköpslistan</div><div class="card">`;
@@ -127,8 +131,8 @@ function renderRes(){const L=cur();if(!P.length&&!CATERR)return `<div class="emp
  h+=`<div class="row" data-act="custom"><div class="th" style="display:flex;align-items:center;justify-content:center;font-size:20px;background:none">✎</div><div class="tx"><div class="nm">Lägg till ”${esc(Q.trim())}”</div><div class="sub">som egen vara</div></div><button class="add" data-act="custom" aria-label="Lägg till egen vara">+</button></div></div>`;return h}
 function renderOrd(){return `<div class="tot">Ordna områdena i den ordning du går genom butiken.</div><div class="card ord">`+S.order.map((a,i)=>`<div class="row"><div class="tx"><div class="nm">${i+1}. ${esc(a)}</div></div><button class="qb" data-act="up" data-i="${i}" aria-label="Flytta upp">↑</button><button class="qb" data-act="dn" data-i="${i}" aria-label="Flytta ner">↓</button></div>`).join("")+`</div><div class="bar"><button class="btn" data-act="ordok" style="background:var(--g);color:#fff;border-color:var(--g)">Klar</button><button class="btn" data-act="ordreset">Återställ</button></div>`}
 function render(){renderChips();$("#qx").style.display=Q?"block":"none";$("main").innerHTML=Q.trim()?renderRes():view==="ord"?renderOrd():renderList()}
-function addP(p){if(!p)return;const L=cur();const x=L.items.find(i=>i.k===p.id);if(x){x.q++;x.d=false}else L.items.push({k:p.id,n:p.n,b:p.b,s:p.s,p:p.p,img:imgU(p.img),a:pArea(p),c:p.c,mv:!!(S.pm&&S.pm[p.id]),q:1,d:false});save();toast("Lagt till: "+p.n);render()}
-function addCustom(){const n=Q.trim();if(!n)return;const L=cur();L.items.push({k:"x:"+uid(),n:n.slice(0,60),b:"",s:"",p:null,img:"",a:RES[0]?areaOf(RES[0].c):"Upp",q:1,d:false});save();toast("Lagt till: "+n);$("#q").value="";Q="";render()}
+function addP(p){if(!p)return;const L=cur();const x=L.items.find(i=>i.k===p.id);if(x){x.q++;x.d=false}else L.items.push({k:p.id,n:p.n,b:p.b,s:p.s,p:p.p,img:imgU(p.img),a:pArea(p),c:p.c,mv:!!(S.pm&&S.pm[p.id]),q:1,d:false});remember(p.id,{n:p.n,b:p.b||"",s:p.s||"",p:p.p,img:imgU(p.img),c:p.c||null,a:pArea(p)});save();toast("Lagt till: "+p.n);render()}
+function addCustom(){const n=Q.trim().slice(0,60);if(!n)return;const L=cur(),k=ckey(n),rc=RES.find(p=>p.c);const a=(S.hist[k]&&S.hist[k].a)||(rc?areaOf(rc.c):"Upp");const x=L.items.find(i=>i.k===k);if(x){x.q++;x.d=false}else L.items.push({k,n,b:"",s:"",p:null,img:"",a,q:1,d:false});remember(k,{n,b:"",s:"",p:null,img:"",c:null,a});save();toast("Lagt till: "+n);$("#q").value="";Q="";render()}
 document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const act=el.dataset.act,i=+el.dataset.i,L=cur();
  switch(act){case"sel":S.cur=el.dataset.id;view="list";break;
  case"newlist":{const n=prompt("Namn på den nya listan:","Ny lista");if(!n||!n.trim())return;const l={id:uid(),name:n.trim().slice(0,40),items:[]};S.lists.push(l);S.cur=l.id;view="list";break}
@@ -146,8 +150,11 @@ document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if
  case"ordreset":S.order=AREAS.slice();break;
  case"up":if(i>0)[S.order[i-1],S.order[i]]=[S.order[i],S.order[i-1]];break;
  case"dn":if(i<S.order.length-1)[S.order[i+1],S.order[i]]=[S.order[i],S.order[i+1]];break;
- default:return}
- save();render()});
+  case"fadd":{const f=FREQ[i];if(f)addP(histP(f[0],f[1]));return}
+  case"fgo":{const f=FREQ[i];if(!f)return;delete S.hist[f[0]];toast("Glömd: "+f[1].n);break}
+  case"fmore":FMORE=!FMORE;break;
+  default:return}
+  save();render()});
 let tmr;$("#q").addEventListener("input",e=>{clearTimeout(tmr);tmr=setTimeout(()=>{Q=e.target.value;render();window.scrollTo(0,0)},150)});
 $("#q").addEventListener("keydown",e=>{if(e.key==="Enter")e.target.blur()});
 $("#qx").onclick=()=>{$("#q").value="";Q="";render()};
@@ -163,17 +170,28 @@ window.__areaStats=()=>{const c={},o={};for(const p of P){const a=areaOf(p.c);c[
  return {c,o,tops,mids}};
 render();loadCat();
 
-function pArea(p){const m=S.pm;return (m&&m[p.id])||areaOf(p.c)}
+function pArea(p){const m=S.pm;return (m&&m[p.id])||(p.c?areaOf(p.c):(p.a||"Upp"))}
 let PK=null;
 function openPick(t){PK=t;const ca=t.it?t.it.a:pArea(t.p),nm=t.it?t.it.n:t.p.n,sh=$("#psheet");
  sh.innerHTML=`<div class="sb"><div class="st">Var ska ”${esc(nm)}” ligga?</div>`+AREAS.map(a=>`<button class="sbtn${a===ca?" on":""}" data-pk="${esc(a)}">${esc(a)}</button>`).join("")+`<button class="sbtn cx" data-pk="">Avbryt</button></div>`;sh.classList.add("on")}
 document.addEventListener("click",e=>{const sh=$("#psheet");
  if(sh.classList.contains("on")){e.stopImmediatePropagation();e.preventDefault();const b=e.target.closest("[data-pk]");
   if(b&&b.dataset.pk&&PK){const a=b.dataset.pk,k=PK.it?PK.it.k:PK.p.id,n=PK.it?PK.it.n:PK.p.n;
-   if(!/^x:/.test(k)){S.pm=S.pm||{};S.pm[k]=a}
+   if(!/^x:/.test(k)){S.pm=S.pm||{};S.pm[k]=a}if(S.hist[k])S.hist[k].a=a;
    for(const l of S.lists)for(const x of l.items)if(x.k===k){x.a=a;x.mv=true}
    save();toast(n+" → "+a)}
   if(b||e.target===sh){sh.classList.remove("on");PK=null;render()}return}
  const el=e.target.closest("[data-act=pick],[data-act=pickl]");if(!el)return;e.stopImmediatePropagation();e.preventDefault();
  if(el.dataset.act==="pick"){const p=RES[+el.dataset.j];if(p)openPick({p})}else{const it=cur().items[+el.dataset.i];if(it)openPick({it})}},true);
+
+function ckey(n){return "x:"+String(n).trim().toLowerCase().replace(/\s+/g," ")}
+function remember(k,d){S.hist=S.hist||{};const o=S.hist[k]||{};S.hist[k]={...o,...d,cnt:(o.cnt||0)+1,t:Date.now()}}
+function histBoost(id){const h=S.hist&&S.hist[id];return h?-3-Math.min(h.cnt||1,5)*0.2:0}
+function histP(k,h){const p=!/^x:/.test(k)&&P.find(x=>x.id===k);return p||{id:k,n:h.n,b:h.b||"",s:h.s||"",p:h.p,img:h.img||"",c:h.c||null,a:h.a}}
+var FREQ=[],FMORE=false;
+function renderFreq(){const L=cur(),on=new Set(L.items.filter(i=>!i.d).map(i=>i.k));
+ const all=Object.entries(S.hist||{}).filter(([k])=>!on.has(k)).sort((a,b)=>((b[1].cnt||0)-(a[1].cnt||0))||((b[1].t||0)-(a[1].t||0)));
+ FREQ=all.slice(0,FMORE?80:8);if(!FREQ.length)return"";
+ return `<div class="sh"><span>Dina vanliga varor</span></div><div class="card fq">`+FREQ.map(([k,h],i)=>{const sub=[(h.cnt>1?"Tillagd "+h.cnt+" gånger":"Tillagd 1 gång"),h.p!=null?fmtP(h.p):""].filter(Boolean).join(" · ");
+  return `<div class="row" data-act="fadd" data-i="${i}">${h.img?`<img class="th" loading="lazy" src="${esc(imgU(h.img))}" alt="">`:`<div class="th"></div>`}<div class="tx"><div class="nm">${esc(h.n)}</div><div class="sub">${esc(sub)}</div></div><button class="fg" data-act="fgo" data-i="${i}" aria-label="Glöm varan">×</button><button class="add" data-act="fadd" data-i="${i}" aria-label="Lägg till">+</button></div>`}).join("")+`</div>`+(all.length>8?`<div class="bar"><button class="btn" data-act="fmore">${FMORE?"Visa färre":"Visa alla "+all.length}</button></div>`:"")}
 </script></body></html>
